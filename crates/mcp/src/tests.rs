@@ -640,3 +640,9 @@ fn a_window_argument_routes_tools_to_that_window() {
         ok(&mut s, "list_windows", json!({})).as_array().unwrap().iter().map(|r| r["title"].as_str().unwrap().to_string()).collect();
     assert_eq!(titles, ["Book1:1", "Book2", "Book1:2"]);
 }
+
+#[test]
+fn the_headless_workbook_is_right_to_left() {
+    let h = Headless::new();
+    assert!(gridcraft_engine::active_sheet(&h.session).is_some_and(|s| s.right_to_left));
+}

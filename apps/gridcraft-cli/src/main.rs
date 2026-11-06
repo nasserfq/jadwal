@@ -166,13 +166,20 @@ fn exec(s: &mut Session, id: &str, params: Value) -> Result<Value, String> {
 }
 
 fn open(path: &str) -> Result<Session, String> {
-    let mut s = Session::new();
+    let mut s = session();
     exec(&mut s, "file.open", json!({"path": path}))?;
     Ok(s)
 }
 
-fn blank() -> Session {
+/// A session as جدول starts one: new workbooks and sheets are right to left.
+fn session() -> Session {
     let mut s = Session::new();
+    s.prefs.default_right_to_left = true;
+    s
+}
+
+fn blank() -> Session {
+    let mut s = session();
     s.new_workbook();
     s
 }
@@ -418,7 +425,7 @@ fn run(args: &[String]) -> Result<(), String> {
         (Some(_), Some(_)) => return Err("give --in or --sample, not both".into()),
         (Some(p), None) => open(p)?,
         (None, Some(name)) => {
-            let mut s = Session::new();
+            let mut s = session();
             exec(&mut s, "file.new", json!({"sample": name}))?;
             s
         }
@@ -465,7 +472,7 @@ fn run(args: &[String]) -> Result<(), String> {
 fn commands(args: &[String]) -> Result<(), String> {
     let a = Args::parse(args, &["search"], &["json"])?;
     let q = a.opt("search").or(a.positional.first().map(String::as_str)).map(str::to_ascii_lowercase);
-    let s = Session::new();
+    let s = session();
     let list: Vec<_> = s
         .commands()
         .into_iter()
@@ -504,7 +511,7 @@ fn functions(args: &[String]) -> Result<(), String> {
     if let Some(c) = a.opt("category") {
         p["category"] = json!(c);
     }
-    let mut s = Session::new();
+    let mut s = session();
     let v = exec(&mut s, "formulas.functions", p)?;
     if a.has("json") {
         outln!("{}", pretty(&v));
@@ -540,7 +547,7 @@ fn mcp(args: &[String]) -> Result<(), String> {
             let session = match (a.opt("in"), a.opt("sample")) {
                 (Some(p), _) => open(p)?,
                 (None, Some(name)) => {
-                    let mut s = Session::new();
+                    let mut s = session();
                     exec(&mut s, "file.new", json!({"sample": name}))?;
                     s
                 }
@@ -579,6 +586,17 @@ fn send(args: &[String]) -> Result<(), String> {
 mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
+
+    #[test]
+    fn new_workbooks_and_sheets_are_right_to_left() {
+        let mut s = blank();
+        assert!(gridcraft_engine::active_sheet(&s).unwrap().right_to_left);
+        exec(&mut s, "home.insertSheet", json!({})).unwrap();
+        assert!(gridcraft_engine::active_sheet(&s).unwrap().right_to_left);
+        let mut s = session();
+        exec(&mut s, "file.new", json!({})).unwrap();
+        assert!(gridcraft_engine::active_sheet(&s).unwrap().right_to_left);
+    }
 
     #[test]
     fn parses_commands() {
