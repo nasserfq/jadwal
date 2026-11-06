@@ -2,7 +2,9 @@
 # Build, sign and (optionally) notarize the macOS release artifacts:
 #
 #   $DIST/gridcraft-<version>-macos-<arch>.dmg          جدول.app on a drag-to-Applications DMG
-#   $DIST/gridcraft-cli-<version>-macos-<arch>.zip      the headless CLI
+#
+# The command line (and its MCP server for AI apps) ships inside the app, as
+# جدول.app/Contents/MacOS/jadwal-cli, so it installs and updates with it.
 #
 # Usage: packaging/macos/package.sh [--arch universal|aarch64|x86_64] [--skip-build]
 #
@@ -41,7 +43,6 @@ SHORT_VERSION="${VERSION%%-*}"
 WORK="$CARGO_TARGET_DIR/macos-package"
 APP="$WORK/جدول.app"
 DMG="$DIST/gridcraft-$VERSION-macos-$ARCH.dmg"
-CLI_ZIP="$DIST/gridcraft-cli-$VERSION-macos-$ARCH.zip"
 
 NOTARIZE=0
 if [[ "$IDENTITY" = "-" ]]; then
@@ -116,6 +117,8 @@ echo "==> assembling $APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 # Executable and icon carry the display name (CFBundleExecutable / CFBundleIconFile).
 cp "$WORK/bin/gridcraft" "$APP/Contents/MacOS/GridCraft"
+# The command line and MCP server for AI apps, beside the app's executable.
+cp "$WORK/bin/gridcraft-cli" "$APP/Contents/MacOS/jadwal-cli"
 cp "$ROOT/assets/app-icon/gridcraft.icns" "$APP/Contents/Resources/GridCraft.icns"
 # Bundled dependency font notices are installed before the app is signed.
 cp "$ROOT/LICENSE-MIT" "$ROOT/LICENSE-APACHE" "$ROOT/NOTICE" "$ROOT/ATTRIBUTION.md" "$APP/Contents/Resources/"
@@ -128,11 +131,11 @@ plutil -lint "$APP/Contents/Info.plist"
 printf 'APPL????' >"$APP/Contents/PkgInfo"
 
 # Sign inside-out: nested code first, then the bundle itself (no --deep on the final signature).
-# Today the only nested code is the main executable; frameworks/helpers would be signed here too.
 # codesign --strict rejects extended attributes such as com.apple.FinderInfo or a resource fork
 # ("Finder information, or similar detritus not allowed"); a source file copied in can carry them.
 # Clear them before signing; nothing after this point may write xattrs onto the bundle (#525).
 xattr -cr "$APP"
+sign --options runtime "$APP/Contents/MacOS/jadwal-cli"
 sign --options runtime --entitlements "$HERE/entitlements.plist" "$APP/Contents/MacOS/GridCraft"
 sign --options runtime --entitlements "$HERE/entitlements.plist" "$APP"
 codesign --verify --strict --deep --verbose=2 "$APP"
@@ -190,19 +193,6 @@ if [[ "$NOTARIZE" = 1 ]]; then
   spctl --assess --type open --context context:primary-signature -vvv "$DMG"
 fi
 
-# ---- CLI ---------------------------------------------------------------------------------------
-echo "==> building $CLI_ZIP"
-CLI_DIR="$WORK/gridcraft-cli-$VERSION-macos-$ARCH"
-mkdir -p "$CLI_DIR"
-cp "$WORK/bin/gridcraft-cli" "$CLI_DIR/"
-copy_docs "$CLI_DIR"
-sign --options runtime "$CLI_DIR/gridcraft-cli"
-codesign --verify --strict --verbose=2 "$CLI_DIR/gridcraft-cli"
-rm -f "$CLI_ZIP"
-ditto -c -k --keepParent "$CLI_DIR" "$CLI_ZIP"
-# A bare Mach-O can't carry a stapled ticket; Gatekeeper looks the notarization up online.
-if [[ "$NOTARIZE" = 1 ]]; then notarize "$CLI_ZIP"; fi
-
-"$WORK/bin/gridcraft-cli" --version
+"$APP/Contents/MacOS/jadwal-cli" --version
 echo "==> done"
-ls -lh "$DMG" "$CLI_ZIP"
+ls -lh "$DMG"

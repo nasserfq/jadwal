@@ -36,11 +36,66 @@
 
 التحديث تلقائي: عند صدور إصدار جديد يعرض جدول «تحديث وإعادة تشغيل»، وتبقى إعداداتك وملفاتك كما هي.
 
+## التحكم بجدول من الذكاء الاصطناعي (MCP)
+
+جدول جاهز للذكاء الاصطناعي: يأتي مع خادم [MCP](https://modelcontextprotocol.io)، وهو معيار مفتوح تستخدمه تطبيقات الذكاء الاصطناعي لتشغيل البرامج. بعد ربطه تطلب بكلامك، مثلًا «اعمل جدولًا بمصروفات الشهر، واجمع كل عمود، وأضف مخططًا، واحفظه Excel»، فينفّذه الذكاء الاصطناعي في جدول خطوة بخطوة: إدخال القيم والصيغ والتنسيق والفرز والمخططات وقراءة الخلايا والحفظ بصيغة Excel أو CSV أو PDF.
+
+يعمل مع أي تطبيق يدعم MCP، مثل Claude ‏(التطبيق وClaude Code)، وCodex من OpenAI، وCursor، وVS Code مع Copilot، وGemini CLI، وLM Studio ‏(نماذج تعمل على جهازك دون إنترنت). الخادم مجاني ويعمل على جهازك، أما الذكاء الاصطناعي فمن التطبيق الذي تختاره وبحسب اشتراكك فيه.
+
+**1. مكان الخادم:** يُثبَّت مع جدول ويُحدَّث معه.
+
+| النظام | المسار |
+|---|---|
+| macOS | `/Applications/جدول.app/Contents/MacOS/jadwal-cli` |
+| Windows | `jadwal-cli.exe` في مجلد جدول، بجانب `Jadwal.exe` |
+| Linux | `jadwal-cli` في مجلد جدول، بجانب `jadwal` |
+
+**2. أضفه إلى تطبيق الذكاء الاصطناعي:**
+
+- **تطبيق Claude:** الإعدادات ← «Developer» ← «Edit Config»، ثم أضف ما يلي إلى الملف `claude_desktop_config.json` وأعد تشغيل Claude:
+
+<div dir="ltr">
+
+```json
+{
+  "mcpServers": {
+    "jadwal": {
+      "command": "/Applications/جدول.app/Contents/MacOS/jadwal-cli",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+</div>
+
+- في Windows ضع مسار `jadwal-cli.exe` بدل المسار السابق، مع مضاعفة الشرطة المائلة، مثل `"C:\\Users\\اسمك\\Jadwal\\jadwal-cli.exe"`.
+- **Cursor وGemini CLI وLM Studio** وأغلب التطبيقات الأخرى: الإعداد نفسه (`mcpServers`) في ملف MCP الخاص بكل تطبيق (`~/.cursor/mcp.json`، ‏`~/.gemini/settings.json`، ‏`mcp.json` في LM Studio).
+- **Claude Code:** <code dir="ltr">claude mcp add jadwal -- "/Applications/جدول.app/Contents/MacOS/jadwal-cli" mcp</code>
+- **Codex:** <code dir="ltr">codex mcp add jadwal -- "/Applications/جدول.app/Contents/MacOS/jadwal-cli" mcp</code>
+
+بهذا يعمل الذكاء الاصطناعي على الملفات في الخلفية دون نافذة، ثم يحفظها حيث تطلب.
+
+**التحكم بنافذة جدول المفتوحة (اختياري):** لتشاهد الذكاء الاصطناعي يعمل في النافذة نفسها، شغّل جدول مع منفذ تحكم، واجعل `args` هي <code dir="ltr">["mcp", "--connect", "7981"]</code>:
+
+<div dir="ltr">
+
+```sh
+"/Applications/جدول.app/Contents/MacOS/GridCraft" --control 7981   # macOS
+Jadwal.exe --control 7981                                   # Windows
+./jadwal --control 7981                                     # Linux
+```
+
+</div>
+
+منفذ التحكم محلي فقط ومحمي بمفتاح سري يكتبه جدول في مجلد إعداداتك، فلا يصل إليه أحد من الشبكة.
+
 ## ما أضافه ناصر القحطاني إلى GridCraft
 
 - ترجمة الواجهة كاملة إلى العربية، والعربية لغة افتراضية.
 - الواجهة من اليمين إلى اليسار في كل النوافذ والقوائم ومربعات الحوار.
 - الأوراق الجديدة من اليمين إلى اليسار افتراضيًا.
+- خادم MCP ضمن التنزيلات لتتحكم تطبيقات الذكاء الاصطناعي بجدول.
 - الاسم والشعار ونافذة التثبيت العربية، وتطبيق Mac موقّع وموثَّق لأجهزة Apple Silicon وIntel، وتنزيلات Windows وLinux، والتحديث التلقائي من إصدارات جدول.
 
 ## شكر
@@ -64,6 +119,15 @@ installer window, the signed universal Mac app and Windows and Linux downloads, 
 
 It is based on [GridCraft](https://github.com/storytold/gridcraft) by the ArtCraft team. Jadwal is
 an independent project, not made, sponsored or endorsed by the ArtCraft team.
+
+## Use it from AI apps (MCP)
+
+Jadwal ships an [MCP](https://modelcontextprotocol.io) server, so Claude and any other MCP app
+(Codex, Cursor, VS Code, Gemini CLI, LM Studio…) can enter values and formulas, format, sort, chart, read cells and save workbooks. It is installed and updated with
+the app: `/Applications/جدول.app/Contents/MacOS/jadwal-cli` on macOS, `jadwal-cli.exe` beside `Jadwal.exe` on Windows, `jadwal-cli` beside `jadwal`
+on Linux. Add it to your client as that command with the argument `mcp` (for example
+`claude mcp add jadwal -- "/Applications/جدول.app/Contents/MacOS/jadwal-cli" mcp`). To drive the open window instead, start Jadwal with
+`--control 7981` and use `mcp --connect 7981`.
 
 ## Build from source
 
