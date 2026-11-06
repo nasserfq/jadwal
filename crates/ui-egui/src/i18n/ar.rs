@@ -1258,6 +1258,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
             "تطبيق آخر يدعم MCP؟ انسخ الإعداد والصقه في إعدادات خوادم MCP فيه."
         }
         "Copy Settings" => "نسخ الإعداد",
+        "Tip: say jadwal in your request so the AI app uses this app, e.g. \"Use the jadwal tools to …\"." => {
+            "نصيحة: اذكر jadwal في طلبك ليستخدم التطبيقُ جدول، مثل: «استخدم أدوات jadwal لـ…»."
+        }
         "Settings copied." => "نُسخ الإعداد.",
         "Check for Updates…" => "التحقق من التحديثات…",
         "Look for a newer GridCraft release" => "البحث عن إصدار أحدث من جدول",

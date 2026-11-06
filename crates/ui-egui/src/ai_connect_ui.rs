@@ -172,6 +172,10 @@ fn body(app: &mut SheetApp, lang: Language, ui: &mut egui::Ui) {
         });
         refresh(&mut app.connect_ai);
     }
+    ui.add_space(4.0);
+    ui.label(
+        egui::RichText::new(lang.tr("Tip: say jadwal in your request so the AI app uses this app, e.g. \"Use the jadwal tools to …\".")).small(),
+    );
     if let Some((text, bad)) = &app.connect_ai.message {
         ui.add_space(6.0);
         if *bad {
