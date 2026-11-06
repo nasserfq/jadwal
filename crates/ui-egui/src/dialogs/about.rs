@@ -17,7 +17,7 @@ pub(super) fn about(ui: &mut egui::Ui, d: &mut Dialog) {
         _ => {
             let lang = crate::i18n::current(ui.ctx());
             ui.heading(crate::APP_NAME);
-            ui.label(lang.tr("Version {version}").replace("{version}", env!("CARGO_PKG_VERSION")));
+            ui.label(lang.tr("Version {version}").replace("{version}", crate::APP_VERSION));
             ui.add_space(4.0);
             ui.label(lang.tr(
                 "An Arabic, right-to-left spreadsheet by Nasser Alqahtani, built on GridCraft, the open-source spreadsheet by the ArtCraft team.",

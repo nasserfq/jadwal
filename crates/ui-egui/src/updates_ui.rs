@@ -7,7 +7,7 @@ use craft_update::updater::{Action, Status, Updater};
 
 use crate::SheetApp;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = crate::APP_VERSION;
 
 pub(crate) struct Runtime {
     updater: Updater,

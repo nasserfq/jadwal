@@ -10,6 +10,7 @@
        save panels, overwrite confirmation). Keep in sync with the interface languages. -->
   <key>CFBundleLocalizations</key>
   <array>
+    <string>ar</string>
     <string>en</string>
     <string>cs</string>
     <string>de</string>
@@ -31,13 +32,13 @@
     <string>zh-Hans</string>
   </array>
   <key>CFBundleDisplayName</key>
-  <string>GridCraft</string>
+  <string>جدول</string>
   <key>CFBundleName</key>
-  <string>GridCraft</string>
+  <string>جدول</string>
   <key>CFBundleExecutable</key>
   <string>GridCraft</string>
   <key>CFBundleIdentifier</key>
-  <string>ai.storyteller.gridcraft</string>
+  <string>ai.storyteller.jadwal</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundlePackageType</key>
@@ -67,7 +68,7 @@
   <key>NSRequiresAquaSystemAppearance</key>
   <false/>
   <key>NSHumanReadableCopyright</key>
-  <string>Copyright © the GridCraft authors. MIT OR Apache-2.0.</string>
+  <string>جدول by Nasser Alqahtani, based on GridCraft © the GridCraft authors. MIT OR Apache-2.0.</string>
 
   <!-- Files GridCraft opens. Rank Alternate: it's offered under "Open With" without taking
        over the default app (Numbers, another spreadsheet) for these types. -->

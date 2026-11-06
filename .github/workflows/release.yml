@@ -1,45 +1,114 @@
 name: Release
 
+# A push to `release` builds جدول for macOS, Windows and Linux and publishes the downloads as a
+# GitHub release, which installed copies offer as an update (update and restart).
 on:
   push:
     branches: [release]
   workflow_dispatch:
-    inputs:
-      version:
-        description: "Version override for a test run, e.g. 0.2.0-rc.1 (empty: Cargo.toml)"
-        type: string
-        default: ""
 
 permissions:
-  contents: write
-  packages: write
-
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  contents: read
 
 jobs:
-  release:
-    # Intentionally tracked at @main (not SHA-pinned) so org-wide CI improvements, security fixes, and build optimizations propagate without PR churn across all craftapp repos.
-    uses: storytold/craft-common-actions/.github/workflows/release.yml@main
-    with:
-      app-name: gridcraft
-      app-title: GridCraft
-      craft-fonts-ref: b076417b5880bd4154bd22f00695b1d28c6bea83
-      version: ${{ inputs.version }}
-    secrets:
-      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-      KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-      APPLE_ID: ${{ secrets.APPLE_ID }}
-      APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
-      WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
-      AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
-      AZURE_CERT_PROFILE: ${{ secrets.AZURE_CERT_PROFILE }}
-      LINUX_SIGNING_KEY: ${{ secrets.LINUX_SIGNING_KEY }}
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            name: macos
+          - os: windows-latest
+            name: windows-x64
+          - os: ubuntu-22.04
+            name: linux-x64
+    runs-on: ${{ matrix.os }}
+    env:
+      # Release n is version 1.<n>.0: the app's own version, the tag and the download names, which
+      # the in-app updater (crates/craft-update) matches and checks.
+      JADWAL_VERSION: 1.${{ github.run_number }}.0
+      GRIDCRAFT_VERSION: 1.${{ github.run_number }}.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fonts (Arabic and the other scripts, OFL)
+        shell: bash
+        run: |
+          git clone https://github.com/storytold/craft-fonts "$RUNNER_TEMP/craft-fonts"
+          git -C "$RUNNER_TEMP/craft-fonts" checkout --quiet b076417b5880bd4154bd22f00695b1d28c6bea83
+          test -s "$RUNNER_TEMP/craft-fonts/fonts/noto-sans-arabic/NotoSansArabic.ttf"
+          echo "CRAFT_FONTS_DIR=$RUNNER_TEMP/craft-fonts" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - uses: Swatinem/rust-cache@v2  # reuse compiled dependencies between releases
+      - name: Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config libxkbcommon-dev libwayland-dev libx11-dev \
+            libxcursor-dev libxrandr-dev libxi-dev libgtk-3-dev libfontconfig1-dev libfreetype-dev libcups2-dev
+      - name: macOS signing certificate
+        if: runner.os == 'macOS'
+        # Signed and notarized when these repository secrets exist; otherwise ad-hoc (unsigned).
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          packaging/macos/import-cert.sh  # sets MACOS_SIGN_IDENTITY for the next step
+      - name: macOS app (DMG), build
+        if: runner.os == 'macOS'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          DIST="$PWD/out" packaging/macos/package.sh --arch universal
+          mv out/*.dmg "out/jadwal-$JADWAL_VERSION-macos-universal.dmg"
+          rm -f out/*.zip
+      - name: Windows and Linux builds
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          cargo build --release --locked -p gridcraft
+          mkdir -p out/Jadwal
+          cp LICENSE-MIT LICENSE-APACHE NOTICE ATTRIBUTION.md out/Jadwal/
+          for f in "$CRAFT_FONTS_DIR"/fonts/*/OFL.txt; do cp "$f" "out/Jadwal/OFL-$(basename "$(dirname "$f")").txt"; done
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            cp target/release/gridcraft.exe out/Jadwal/Jadwal.exe
+            (cd out && 7z a "jadwal-$JADWAL_VERSION-windows-x64-portable.zip" Jadwal >/dev/null)
+          else
+            cp target/release/gridcraft out/Jadwal/jadwal
+            tar -C out -czf "out/jadwal-$JADWAL_VERSION-linux-x86_64.tar.gz" Jadwal
+          fi
+          rm -rf out/Jadwal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          path: out/*
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        run: cd dist && sha256sum * > SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.${{ github.run_number }}.0
+          name: جدول ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          files: dist/*
+          body: |
+            جدول: برنامج جداول بيانات عربي من اليمين إلى اليسار، مبني على GridCraft من فريق ArtCraft.
+
+            - macOS (Apple Silicon and Intel, macOS 11 or later): the `.dmg`. Signed and notarized by Apple.
+            - Windows: the `windows-x64-portable.zip`, unzip and run `Jadwal.exe`.
+            - Linux: the `linux-x86_64.tar.gz`, extract and run `jadwal`.
+
+            جدول يحدّث نفسه: عند توفر إصدار جديد تظهر رسالة «تحديث وإعادة تشغيل».

@@ -6,13 +6,22 @@
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
-/// GridCraft as craft-update knows it, with its 128 px icon and accent colour: the update
-/// prompt shows both, and an AppImage's menu entry gets the icon.
+/// جدول as its updater knows it, with its 128 px icon and accent colour: the update prompt shows
+/// both, and an AppImage's menu entry gets the icon. Releases are `v1.<n>.0` on nasserfq/jadwal
+/// with `jadwal-<version>-<os>-<arch>` downloads; the Mac bundle is ai.storyteller.jadwal.
 #[cfg(not(target_arch = "wasm32"))]
 pub const UPDATE_APP: craft_update::app::App = craft_update::app::App {
     icon_png: Some(include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.gridcraft.png")),
-    accent: Some([0x1f, 0x9d, 0x55]),
-    ..craft_update::suite::GRIDCRAFT
+    accent: Some([0x3b, 0x5b, 0xdb]),
+    developer: "ناصر القحطاني",
+    ..craft_update::app::App::new("jadwal", APP_NAME, "Arabic spreadsheet", "nasserfq/jadwal")
+};
+
+/// This build's version: `1.<n>.0` for release n (the release workflow sets JADWAL_VERSION),
+/// else the package version (local builds, which don't update themselves).
+pub const APP_VERSION: &str = match option_env!("JADWAL_VERSION") {
+    Some(v) => v,
+    None => env!("CARGO_PKG_VERSION"),
 };
 
 pub mod backstage;
