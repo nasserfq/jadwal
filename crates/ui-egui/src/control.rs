@@ -262,6 +262,11 @@ pub fn handle(app: &mut SheetApp, ctx: &egui::Context, method: &str, p: &Json) -
             for (id, label, params) in [
                 ("ui.ribbonTab", "Ribbon Tab", ""),
                 ("app.checkForUpdates", "Check for Updates…", ""),
+                (
+                    "app.connectAi",
+                    "Connect to AI Apps",
+                    "{client?: claude|claudeCode|codex|cursor|vscode|windsurf|gemini|lmstudio, disconnect?: bool} (opens the window without client) → {client, state} or {client, link}",
+                ),
                 ("view.collapseRibbon", "Collapse Ribbon", ""),
                 (
                     "view.expandFormulaBar",

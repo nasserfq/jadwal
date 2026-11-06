@@ -27,6 +27,7 @@ impl Class {
 /// without the `gridcraft-` prefix.
 pub const TABLE: &[(&str, Class)] = &[
     ("core", Class::Layer(0)),
+    ("ai-connect", Class::Layer(0)),
     ("numfmt", Class::Layer(0)),
     ("pdf", Class::Layer(0)),
     ("formula", Class::Layer(1)),

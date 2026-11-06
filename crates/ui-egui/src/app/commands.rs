@@ -152,6 +152,19 @@ impl SheetApp {
                 self.check_for_updates();
                 Ok(Json::Null)
             }
+            // Automate › Connect to AI Apps; with `client` (claude, claudeCode, codex, cursor,
+            // vscode, windsurf, gemini, lmstudio) it connects that app without the window, and with
+            // `"disconnect": true` takes the connection out again.
+            #[cfg(not(target_arch = "wasm32"))]
+            "app.connectAi" | "help.connectAi" => match p.get("client").and_then(Json::as_str) {
+                None => {
+                    crate::ai_connect_ui::open(self);
+                    Ok(Json::Null)
+                }
+                Some(client) => crate::ai_connect_ui::run(client, p.get("disconnect").and_then(Json::as_bool).unwrap_or(false)),
+            },
+            #[cfg(target_arch = "wasm32")]
+            "app.connectAi" | "help.connectAi" => Err("connecting AI apps needs the desktop app".into()),
             "ui.printSettings" => printing::settings(&mut self.printing, p, self.services.printers.as_ref()),
             "ui.printSubmit" => self.submit_print(p.clone()),
             "ui.ribbonTab" => {

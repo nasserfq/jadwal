@@ -57,6 +57,8 @@ pub mod macro_ui;
 pub const APP_NAME: &str = "جدول";
 /// Where جدول lives: its source, releases and updates.
 pub const REPO_URL: &str = "https://github.com/nasserfq/jadwal";
+#[cfg(not(target_arch = "wasm32"))]
+mod ai_connect_ui;
 pub mod mirror;
 pub mod objects;
 pub mod outline;
@@ -337,6 +339,9 @@ pub struct SheetApp {
     /// The update check, the startup prompt and a running self-update (desktop only).
     #[cfg(not(target_arch = "wasm32"))]
     updates_rt: updates_ui::Runtime,
+    /// Automate › Connect to AI Apps: the window and its last result (desktop only).
+    #[cfg(not(target_arch = "wasm32"))]
+    connect_ai: ai_connect_ui::Runtime,
 }
 
 /// Strips the engine's error prefixes for message boxes.
