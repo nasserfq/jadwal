@@ -1,15 +1,15 @@
 # جدول app icon
 
 The word جدول (outlined Noto Kufi Arabic Black, SIL Open Font License 1.1) over a small table on
-a paper page, on the blue tile of مكتب, the family of Nasser Alqahtani's Arabic apps. The table's
-header row is blue and one cell is gold, the colour that marks the current app in the مكتب mark.
+a paper page, on a green tile (the GridCraft green of the ArtCraft apps). The table's
+header row is green and one cell is gold.
 Made for جدول by Nasser Alqahtani with Claude; it replaces GridCraft's placeholder ledger icon.
 
 ## Palette
 
 | Colour | Hex | Used for |
 |---|---|---|
-| مكتب blue | `#3b5bdb` | The tile and the header row |
+| GridCraft green | `#1f9d55` | The tile and the header row |
 | Ink | `#0b0b0c` | The word, outlines and grid lines |
 | Paper | `#efe9dc` | The page |
 | Gold | `#f5b841` | The selected cell |

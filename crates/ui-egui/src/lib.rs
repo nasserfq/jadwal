@@ -12,7 +12,7 @@
 #[cfg(not(target_arch = "wasm32"))]
 pub const UPDATE_APP: craft_update::app::App = craft_update::app::App {
     icon_png: Some(include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.gridcraft.png")),
-    accent: Some([0x3b, 0x5b, 0xdb]),
+    accent: Some([0x1f, 0x9d, 0x55]),
     developer: "ناصر القحطاني",
     ..craft_update::app::App::new("jadwal", APP_NAME, "Arabic spreadsheet", "nasserfq/jadwal")
 };
