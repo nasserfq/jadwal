@@ -43,6 +43,12 @@ pub mod keymap;
 pub mod keytips;
 pub mod macro_editor;
 pub mod macro_ui;
+
+/// The app's name, shown in its windows, About and messages.
+pub const APP_NAME: &str = "جدول";
+/// Where جدول lives: its source, releases and updates.
+pub const REPO_URL: &str = "https://github.com/nasserfq/jadwal";
+pub mod mirror;
 pub mod objects;
 pub mod outline;
 pub mod panes;

@@ -196,6 +196,8 @@ impl DocWindows {
                     app.open_path(&path);
                 }
                 app.ui(ui);
+                // Right-to-left languages draw the whole window mirrored.
+                crate::mirror::output(ui.ctx());
                 if app.session.active_window() != Some(*w) {
                     requested = app.session.active_window();
                 }

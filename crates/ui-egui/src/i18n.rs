@@ -142,6 +142,12 @@ impl Language {
         }
     }
 
+    /// Whether the language is written right to left: its interface is drawn mirrored and new
+    /// sheets start right to left.
+    pub const fn is_rtl(self) -> bool {
+        matches!(self, Self::Ar)
+    }
+
     pub fn parse(code: &str) -> Option<Self> {
         Self::from_tag(code)
     }

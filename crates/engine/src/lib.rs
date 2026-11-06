@@ -398,6 +398,9 @@ pub struct Prefs {
     /// (at most [`recent::MAX`]; see [`recent`]). An application list, as in Excel.
     #[serde(deserialize_with = "recent::lenient")]
     pub recent_functions: Vec<String>,
+    /// New sheets start right to left (Sheet Right-to-Left on). The interface turns it on for a
+    /// right-to-left interface language.
+    pub default_right_to_left: bool,
 }
 
 /// The selection statistics shown on the status bar, set with `view.statusBar`. Excel turns on
@@ -433,6 +436,7 @@ impl Default for Prefs {
             formula_bar: true,
             status_bar: StatusBarStats::default(),
             recent_functions: recent::defaults(),
+            default_right_to_left: false,
         }
     }
 }
@@ -614,6 +618,11 @@ impl Session {
         for _ in 1..self.prefs.sheets_in_new_workbook.clamp(1, 255) {
             let name = wb.next_sheet_name();
             wb.sheets.push(Arc::new(gridcraft_model::Sheet::new(name)));
+        }
+        if self.prefs.default_right_to_left {
+            for sheet in &mut wb.sheets {
+                Arc::make_mut(sheet).right_to_left = true;
+            }
         }
         self.add_document(DocState::new(wb, None, format!("Book{n}"), Trust::Local))
     }

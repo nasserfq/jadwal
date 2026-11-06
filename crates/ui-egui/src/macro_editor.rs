@@ -1104,7 +1104,7 @@ fn ref_edit(app: &SheetApp, ui: &mut Ui, d: &mut Dialog, refs: &mut RefPick, key
 fn prompts(app: &mut SheetApp, ctx: &egui::Context, ed: &mut Editor, open: &mut bool) {
     if ed.ask_stop {
         let mut answer: Option<Option<bool>> = None;
-        egui::Modal::new(Id::unique("gridcraft.macro_editor.stop")).show(ctx, |ui| {
+        crate::mirror::modal(ctx, egui::Modal::new(Id::unique("gridcraft.macro_editor.stop")), |ui| {
             ui.set_width(360.0);
             ui.label(egui::RichText::new("Stop debugging").strong());
             ui.label("Keep the changes the macro has made so far? They are one undo step either way.");
@@ -1142,7 +1142,7 @@ fn prompts(app: &mut SheetApp, ctx: &egui::Context, ed: &mut Editor, open: &mut 
     }
     if ed.ask_close {
         let mut answer: Option<Option<bool>> = None;
-        egui::Modal::new(Id::unique("gridcraft.macro_editor.close")).show(ctx, |ui| {
+        crate::mirror::modal(ctx, egui::Modal::new(Id::unique("gridcraft.macro_editor.close")), |ui| {
             ui.set_width(360.0);
             ui.label(egui::RichText::new(format!("Save changes to macro “{}”?", ed.draft.name)).strong());
             ui.add_space(8.0);

@@ -18,6 +18,8 @@ use super::{CellRef, Pos2};
 pub fn show(app: &mut SheetApp, ui: &mut egui::Ui) {
     let t = Tokens::get(ui.ctx());
     let available = ui.available_rect_before_wrap();
+    // The sheet lays itself out right to left: a mirrored interface moves it as a block.
+    crate::mirror::keep(ui.ctx(), available);
     // A right-to-left sheet has its vertical scrollbar on the left.
     let rtl = app.session.active().and_then(|d| d.wb.active()).is_some_and(|s| s.right_to_left);
     let bar = vertical_bar_width(app, available);

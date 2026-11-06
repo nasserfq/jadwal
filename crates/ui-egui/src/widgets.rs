@@ -584,7 +584,7 @@ pub fn message_box(app: &mut SheetApp, ctx: &egui::Context) {
     let title = app.ui.language.tr(&title).to_owned();
     let msg = app.ui.language.tr_error(&msg);
     let mut close = false;
-    egui::Modal::new(egui::Id::unique("message_box")).show(ctx, |ui| {
+    crate::mirror::modal(ctx, egui::Modal::new(egui::Id::unique("message_box")), |ui| {
         ui.set_width(380.0);
         ui.horizontal(|ui| {
             let (r, _) = ui.allocate_exact_size(vec2(36.0, 36.0), Sense::hover());

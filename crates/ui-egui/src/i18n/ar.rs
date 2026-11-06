@@ -40,7 +40,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "60% - Accent4" => "60% - تمييز 4",
         "60% - Accent5" => "60% - تمييز 5",
         "60% - Accent6" => "60% - تمييز 6",
-        "A CSV file, web page or PDF is a copy: the workbook keeps its own file." => "ملف CSV أو صفحة الويب أو PDF نسخة فقط: يحتفظ المصنف بملفه الخاص.",
+        "A CSV file, web page or PDF is a copy: the workbook keeps its own file." => {
+            "ملف CSV أو صفحة الويب أو PDF نسخة فقط: يحتفظ المصنف بملفه الخاص."
+        }
         "A Date Occurring…" => "تاريخ يقع في…",
         "A to Z" => "من أ إلى ي",
         "About" => "حول",
@@ -412,7 +414,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Forecast\nSheet" => "ورقة\nالتنبؤ",
         "Forecast Sheet" => "ورقة التنبؤ",
         "Forecast end (date or number; blank: a third of the history):" => "نهاية التنبؤ (تاريخ أو رقم؛ فارغ: ثلث السجل):",
-        "Forecast start (a date or number in the history; blank: after the last point):" => "بداية التنبؤ (تاريخ أو رقم في السجل؛ فارغ: بعد آخر نقطة):",
+        "Forecast start (a date or number in the history; blank: after the last point):" => {
+            "بداية التنبؤ (تاريخ أو رقم في السجل؛ فارغ: بعد آخر نقطة):"
+        }
         "Format" => "تنسيق",
         "Format\nPane" => "جزء\nالتنسيق",
         "Format\nas Table" => "تنسيق\nكجدول",
@@ -447,7 +451,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "GRG Nonlinear" => "GRG غير خطي",
         "General" => "عام",
         "Get Data\n(Text/CSV)" => "إحضار البيانات\n(نص/CSV)",
-        "Glide the selection outline to the cell you move to instead of jumping there" => "تحريك إطار التحديد بسلاسة إلى الخلية التي تنتقل إليها بدلًا من القفز إليها",
+        "Glide the selection outline to the cell you move to instead of jumping there" => {
+            "تحريك إطار التحديد بسلاسة إلى الخلية التي تنتقل إليها بدلًا من القفز إليها"
+        }
         "Go To" => "انتقال إلى",
         "Go To Special" => "الانتقال إلى خاص",
         "Go To Special…" => "الانتقال إلى خاص…",
@@ -480,7 +486,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Header" => "الرأس",
         "Header &\nFooter" => "الرأس\nوالتذييل",
         "Header & Footer" => "الرأس والتذييل",
-        "Header (&L left, &C center, &R right; &P page, &N pages, &D date, &A sheet):" => "الرأس (&L يسار، &C وسط، &R يمين؛ &P الصفحة، &N عدد الصفحات، &D التاريخ، &A الورقة):",
+        "Header (&L left, &C center, &R right; &P page, &N pages, &D date, &A sheet):" => {
+            "الرأس (&L يسار، &C وسط، &R يمين؛ &P الصفحة، &N عدد الصفحات، &D التاريخ، &A الورقة):"
+        }
         "Header (in):" => "الرأس (بوصة):",
         "Header Margin" => "هامش الرأس",
         "Header Menu|Insert" => "إدراج",
@@ -502,7 +510,7 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Highlight the active cell's row" => "تمييز صف الخلية النشطة",
         "Highlighter" => "قلم تمييز",
         "Histogram" => "مدرج تكراري",
-        "Home" => "الشريط الرئيسي",
+        "Home" => "الصفحة الرئيسية",
         "Horizontal" => "أفقي",
         "Horizontal (Category) Axis Labels:" => "تسميات المحور الأفقي (الفئات):",
         "Horizontal axis title:" => "عنوان المحور الأفقي:",
@@ -604,7 +612,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Location" => "الموقع",
         "Location Range:" => "نطاق الموقع:",
         "Lock Cell" => "تأمين الخلية",
-        "Lock the sheet structure so sheets can't be added, moved, renamed or deleted." => "تأمين بنية الأوراق بحيث لا يمكن إضافة الأوراق أو نقلها أو إعادة تسميتها أو حذفها.",
+        "Lock the sheet structure so sheets can't be added, moved, renamed or deleted." => {
+            "تأمين بنية الأوراق بحيث لا يمكن إضافة الأوراق أو نقلها أو إعادة تسميتها أو حذفها."
+        }
         "Locked" => "مؤمّن",
         "Logical" => "منطقية",
         "Long Date" => "تاريخ طويل",
@@ -807,7 +817,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Protect Structure and Windows" => "حماية البنية والإطارات",
         "Protect Workbook" => "حماية المصنف",
         "Protect Workbook structure" => "حماية بنية المصنف",
-        "Protect workbook for: Structure (sheets can't be added, moved, renamed, hidden or deleted)." => "حماية المصنف لـ: البنية (لا يمكن إضافة الأوراق أو نقلها أو إعادة تسميتها أو إخفاؤها أو حذفها).",
+        "Protect workbook for: Structure (sheets can't be added, moved, renamed, hidden or deleted)." => {
+            "حماية المصنف لـ: البنية (لا يمكن إضافة الأوراق أو نقلها أو إعادة تسميتها أو إخفاؤها أو حذفها)."
+        }
         "Protection" => "الحماية",
         "Purple" => "أرجواني",
         "Python Mode" => "وضع Python",
@@ -932,7 +944,9 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Sheet Name" => "اسم الورقة",
         "Sheet Options|View" => "عرض",
         "Sheet Right-to-Left" => "ورقة من اليمين لليسار",
-        "Sheet structure is locked: sheets can't be added, moved, renamed or deleted." => "بنية الأوراق مؤمّنة: لا يمكن إضافة الأوراق أو نقلها أو إعادة تسميتها أو حذفها.",
+        "Sheet structure is locked: sheets can't be added, moved, renamed or deleted." => {
+            "بنية الأوراق مؤمّنة: لا يمكن إضافة الأوراق أو نقلها أو إعادة تسميتها أو حذفها."
+        }
         "Sheets" => "الأوراق",
         "Sheets: {sheets}" => "الأوراق: {sheets}",
         "Shift cells down" => "إزاحة الخلايا لأسفل",
@@ -1202,6 +1216,10 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "— VBA project (preserved, not run)" => "— مشروع VBA (محفوظ، لا يُشغَّل)",
         "— {steps} steps" => "— {steps} خطوات",
         "€ Euro" => "€ يورو",
+        "GridCraft" => "جدول",
+        "An Arabic, right-to-left spreadsheet by Nasser Alqahtani, built on GridCraft, the open-source spreadsheet by the ArtCraft team." => {
+            "جدول برنامج جداول بيانات عربي من اليمين إلى اليسار، صنعه ناصر القحطاني على أساس GridCraft، برنامج الجداول مفتوح المصدر من فريق ArtCraft."
+        }
         _ => return None,
     })
 }
