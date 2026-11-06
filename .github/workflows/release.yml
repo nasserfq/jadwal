@@ -69,15 +69,18 @@ jobs:
         if: runner.os != 'macOS'
         shell: bash
         run: |
-          cargo build --release --locked -p gridcraft
+          cargo build --release --locked -p gridcraft -p gridcraft-cli
           mkdir -p out/Jadwal
           cp LICENSE-MIT LICENSE-APACHE NOTICE ATTRIBUTION.md out/Jadwal/
           for f in "$CRAFT_FONTS_DIR"/fonts/*/OFL.txt; do cp "$f" "out/Jadwal/OFL-$(basename "$(dirname "$f")").txt"; done
           if [[ "$RUNNER_OS" == Windows ]]; then
             cp target/release/gridcraft.exe out/Jadwal/Jadwal.exe
+            # The command line and MCP server for AI apps.
+            cp target/release/gridcraft-cli.exe out/Jadwal/jadwal-cli.exe
             (cd out && 7z a "jadwal-$JADWAL_VERSION-windows-x64-portable.zip" Jadwal >/dev/null)
           else
             cp target/release/gridcraft out/Jadwal/jadwal
+            cp target/release/gridcraft-cli out/Jadwal/jadwal-cli
             tar -C out -czf "out/jadwal-$JADWAL_VERSION-linux-x86_64.tar.gz" Jadwal
           fi
           rm -rf out/Jadwal
@@ -112,3 +115,5 @@ jobs:
             - Linux: the `linux-x86_64.tar.gz`, extract and run `jadwal`.
 
             جدول يحدّث نفسه: عند توفر إصدار جديد تظهر رسالة «تحديث وإعادة تشغيل».
+
+            جاهز للذكاء الاصطناعي: يأتي مع خادم MCP (`jadwal-cli mcp`) ليتحكم Claude وغيره من تطبيقات الذكاء الاصطناعي بجدول. طريقة الإعداد في ملف README.
