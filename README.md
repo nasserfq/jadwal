@@ -42,6 +42,12 @@
 
 يعمل مع أي تطبيق يدعم MCP، مثل Claude ‏(التطبيق وClaude Code)، وCodex من OpenAI، وCursor، وVS Code مع Copilot، وGemini CLI، وLM Studio ‏(نماذج تعمل على جهازك دون إنترنت). الخادم مجاني ويعمل على جهازك، أما الذكاء الاصطناعي فمن التطبيق الذي تختاره وبحسب اشتراكك فيه.
 
+**الطريقة الأسهل، بنقرة:** في جدول افتح تبويب «أتمتة» ← «ربط مع الذكاء الاصطناعي». تظهر تطبيقات الذكاء الاصطناعي المثبتة على جهازك، مثل Claude وClaude Code وCodex وCursor وVS Code وWindsurf وGemini CLI وLM Studio، فاضغط «ربط» بجانب التطبيق ثم أعد تشغيله. ولأي تطبيق آخر يدعم MCP اضغط «نسخ الإعداد» والصقه في إعداداته.
+
+على Mac يمكنك أيضًا تنزيل ملف `jadwal-claude-extension-macos.mcpb` من [صفحة الإصدارات](https://github.com/nasserfq/jadwal/releases/latest) وفتحه، فيعرض تطبيق Claude نافذة «تثبيت» ويضيف جدول بنقرة.
+
+**الإعداد اليدوي (إن أردت):**
+
 **1. مكان الخادم:** يُثبَّت مع جدول ويُحدَّث معه.
 
 | النظام | المسار |
@@ -95,7 +101,7 @@ Jadwal.exe --control 7981                                   # Windows
 - ترجمة الواجهة كاملة إلى العربية، والعربية لغة افتراضية.
 - الواجهة من اليمين إلى اليسار في كل النوافذ والقوائم ومربعات الحوار.
 - الأوراق الجديدة من اليمين إلى اليسار افتراضيًا.
-- خادم MCP ضمن التنزيلات لتتحكم تطبيقات الذكاء الاصطناعي بجدول.
+- خادم MCP ضمن التنزيلات لتتحكم تطبيقات الذكاء الاصطناعي بجدول، ونافذة «ربط مع الذكاء الاصطناعي» تربطه بتطبيقات الذكاء الاصطناعي بنقرة، وإضافة Claude ‏(`.mcpb`).
 - الاسم والشعار ونافذة التثبيت العربية، وتطبيق Mac موقّع وموثَّق لأجهزة Apple Silicon وIntel، وتنزيلات Windows وLinux، والتحديث التلقائي من إصدارات جدول.
 
 ## شكر
@@ -125,7 +131,9 @@ an independent project, not made, sponsored or endorsed by the ArtCraft team.
 Jadwal ships an [MCP](https://modelcontextprotocol.io) server, so Claude and any other MCP app
 (Codex, Cursor, VS Code, Gemini CLI, LM Studio…) can enter values and formulas, format, sort, chart, read cells and save workbooks. It is installed and updated with
 the app: `/Applications/جدول.app/Contents/MacOS/jadwal-cli` on macOS, `jadwal-cli.exe` beside `Jadwal.exe` on Windows, `jadwal-cli` beside `jadwal`
-on Linux. Add it to your client as that command with the argument `mcp` (for example
+on Linux. Automate ▸ Connect to AI Apps adds it with one click to Claude, Claude Code, Codex, Cursor, VS Code,
+Windsurf, Gemini CLI and LM Studio, and on macOS the `jadwal-claude-extension-macos.mcpb` release
+download installs it into Claude. By hand, add it to your client as that command with the argument `mcp` (for example
 `claude mcp add jadwal -- "/Applications/جدول.app/Contents/MacOS/jadwal-cli" mcp`). To drive the open window instead, start Jadwal with
 `--control 7981` and use `mcp --connect 7981`.
 

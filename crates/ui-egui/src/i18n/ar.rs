@@ -1225,6 +1225,40 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Arrange\nAll" => "ترتيب\nالكل",
         "Arrange All" => "ترتيب الكل",
         "Check for\nUpdates…" => "التحقق من\nالتحديثات…",
+        "Connect to AI Apps" => "ربط مع الذكاء الاصطناعي",
+        "Connect to\nAI Apps" => "ربط مع\nالذكاء الاصطناعي",
+        "Let Claude and other AI apps work in Jadwal (MCP)" => "اجعل Claude وغيره من تطبيقات الذكاء الاصطناعي تعمل في جدول (MCP)",
+        "Connect Jadwal to an AI app so it can build, fill and format your workbooks when you ask it to. Press Connect next to the app, then restart it." => {
+            "اربط جدول بتطبيق ذكاء اصطناعي، فينشئ مصنفاتك ويملؤها وينسّقها حين تطلب منه ذلك بكلامك. اضغط «ربط» بجانب التطبيق ثم أعد تشغيله."
+        }
+        "The MCP server (jadwal-cli) isn't next to Jadwal. Download Jadwal again." => {
+            "لم يُعثر على خادم MCP ‏(jadwal-cli) بجانب جدول. نزّل جدول من جديد."
+        }
+        "Move Jadwal to the Applications folder and open it from there first, or the connection stops working once it closes." => {
+            "انقل جدول إلى مجلد التطبيقات (Applications) وافتحه من هناك أولًا، وإلا توقّف الربط بعد إغلاقه."
+        }
+        "No AI app we know of is installed here. Install one, such as Claude, then open this window again." => {
+            "لم نجد على جهازك تطبيق ذكاء اصطناعي نعرفه. ثبّت أحدها، مثل Claude، ثم افتح هذه النافذة من جديد."
+        }
+        "Not installed" => "غير مثبت",
+        "Not connected" => "غير مربوط",
+        "Connected ✓" => "مربوط ✓",
+        "Needs updating" => "يحتاج تحديثًا",
+        "Its settings can't be read" => "تعذّرت قراءة إعداداته",
+        "Connect" => "ربط",
+        "Update" => "تحديث",
+        "Disconnect" => "إلغاء الربط",
+        "Not installed here:" => "غير مثبتة على جهازك:",
+        "Disconnected." => "أُلغي الربط.",
+        "Connected. Restart {app}." => "تم الربط. أعد تشغيل {app}.",
+        "Connected." => "تم الربط.",
+        "Confirm the install in {app}." => "وافق على الإضافة في {app}.",
+        "Couldn't connect:" => "تعذّر الربط:",
+        "Another MCP app? Copy the settings and paste them into its MCP servers settings." => {
+            "تطبيق آخر يدعم MCP؟ انسخ الإعداد والصقه في إعدادات خوادم MCP فيه."
+        }
+        "Copy Settings" => "نسخ الإعداد",
+        "Settings copied." => "نُسخ الإعداد.",
         "Check for Updates…" => "التحقق من التحديثات…",
         "Look for a newer GridCraft release" => "البحث عن إصدار أحدث من جدول",
         "Insert an equation, or pick one from the gallery" => "إدراج معادلة، أو اختيار واحدة من المعرض",

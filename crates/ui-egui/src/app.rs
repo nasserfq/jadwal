@@ -85,6 +85,8 @@ impl SheetApp {
             arrange_windows: None,
             #[cfg(not(target_arch = "wasm32"))]
             updates_rt: Default::default(),
+            #[cfg(not(target_arch = "wasm32"))]
+            connect_ai: Default::default(),
         }
     }
 
@@ -212,6 +214,8 @@ impl SheetApp {
         self.session.prefs.default_right_to_left = self.ui.language.is_rtl();
         #[cfg(not(target_arch = "wasm32"))]
         updates_ui::show(self, &ctx);
+        #[cfg(not(target_arch = "wasm32"))]
+        crate::ai_connect_ui::show(self, &ctx);
         let t = theme::Tokens::get(&ctx);
         // A host can turn the File tab off while Backstage is already open: close it.
         if !self.chrome.file_tab {

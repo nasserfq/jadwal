@@ -11,6 +11,21 @@ Two backends:
 | Headless (default) | `gridcraft-cli mcp [--in book.xlsx \| --sample budget]` | An in-process engine session — no window. |
 | Remote | `gridcraft-cli mcp --connect 7979` | A running app started with `gridcraft --control 7979` (TCP JSON lines on `127.0.0.1`, authenticated with the app's token: it is read from the app's token file or `GRIDCRAFT_CONTROL_TOKEN`, see [`control-protocol.md`](control-protocol.md)). |
 
+## Connecting AI apps with one click (جدول)
+
+Automate ▸ Connect to AI Apps lists the AI apps installed on this computer and adds `jadwal-cli mcp`
+(from the app's own folder) to their settings with one button each, or takes it out again: Claude,
+Claude Code, Codex, Cursor, VS Code, Windsurf, Gemini CLI and LM Studio. It writes each app's own
+settings file, keeps everything else in it, saves the original once as `<file>.jadwal-backup`, and
+never rewrites a file it can't read; a VS Code `mcp.json` with comments gets VS Code's own install
+link instead. Copy Settings gives any other MCP app the `mcpServers` block to paste. The logic is
+the UI-free `ai-connect` crate; the command is `app.connectAi` (`{"client": "cursor"}` connects
+without the window, `"disconnect": true` undoes it).
+
+macOS releases also carry `jadwal-claude-extension-macos.mcpb` (`packaging/mcpb/make-mcpb.sh`): a
+Claude desktop extension that runs the server inside `/Applications/جدول.app`, so opening it
+installs جدول into Claude through Claude's own window and it updates with the app.
+
 ## Claude Code
 
 ```sh

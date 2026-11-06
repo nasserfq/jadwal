@@ -65,6 +65,8 @@ jobs:
           DIST="$PWD/out" packaging/macos/package.sh --arch universal
           mv out/*.dmg "out/jadwal-$JADWAL_VERSION-macos-universal.dmg"
           rm -f out/*.zip
+          # Claude desktop extension: double-click to connect Claude to the installed app.
+          packaging/mcpb/make-mcpb.sh out "$JADWAL_VERSION"
       - name: Windows and Linux builds
         if: runner.os != 'macOS'
         shell: bash
@@ -116,4 +118,4 @@ jobs:
 
             جدول يحدّث نفسه: عند توفر إصدار جديد تظهر رسالة «تحديث وإعادة تشغيل».
 
-            جاهز للذكاء الاصطناعي: يأتي مع خادم MCP (`jadwal-cli mcp`) ليتحكم Claude وغيره من تطبيقات الذكاء الاصطناعي بجدول. طريقة الإعداد في ملف README.
+            جاهز للذكاء الاصطناعي: يأتي مع خادم MCP (`jadwal-cli mcp`) ليتحكم Claude وغيره من تطبيقات الذكاء الاصطناعي بجدول. للربط اضغط «ربط مع الذكاء الاصطناعي» في تبويب «أتمتة» داخل جدول، أو افتح ملف `jadwal-claude-extension-macos.mcpb` على Mac ليضيفه Claude بنقرة.
