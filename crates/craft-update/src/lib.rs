@@ -1,6 +1,8 @@
 //! Release checking, downloading, installing and self-updating for the Craft App Suite and ArtCraft Launcher.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
+// The updater only runs natively (never on wasm), where reading the clock is fine.
+#![allow(clippy::disallowed_methods)]
 
 pub mod app;
 pub mod desktop_entry;

@@ -214,14 +214,14 @@ pub fn contributors_ui(ui: &mut egui::Ui) {
     let id = egui::Id::unique("credits_view");
     let mut v = ui.data_mut(|d| d.get_temp::<View>(id)).unwrap_or_default();
     ui.horizontal_wrapped(|ui| {
-        ui.label("Show");
+        ui.label(crate::i18n::current(ui.ctx()).tr("Show"));
         for m in NameMode::ALL {
             if ui.selectable_label(v.names == m, m.label()).clicked() {
                 v.names = m;
             }
         }
         ui.separator();
-        ui.label("Sort");
+        ui.label(crate::i18n::current(ui.ctx()).tr("Sort"));
         craft_ui::ComboBox::from_id_salt("credits_sort").selected_text(v.key.label().0).show_ui(ui, |ui| {
             for k in SortKey::ALL {
                 if ui.selectable_label(v.key == k, k.label().0).clicked() {
@@ -234,10 +234,10 @@ pub fn contributors_ui(ui: &mut egui::Ui) {
             v.ascending = !v.ascending;
         }
         ui.separator();
-        if ui.selectable_label(!v.table, "Grab bag").clicked() {
+        if ui.selectable_label(!v.table, crate::i18n::current(ui.ctx()).tr("Grab bag")).clicked() {
             v.table = false;
         }
-        if ui.selectable_label(v.table, "Table").clicked() {
+        if ui.selectable_label(v.table, crate::i18n::current(ui.ctx()).tr("Table")).clicked() {
             v.table = true;
         }
     });
@@ -245,7 +245,7 @@ pub fn contributors_ui(ui: &mut egui::Ui) {
     ui.label(RichText::new(format!("{} contributors · {} commits", list.len(), group(TOTAL_COMMITS))).small().weak());
     ui.separator();
     if list.is_empty() {
-        ui.label("No contributor data was built into this copy.");
+        ui.label(crate::i18n::current(ui.ctx()).tr("No contributor data was built into this copy."));
     } else if v.table {
         // The table scrolls vertically itself, under a fixed header; it only scrolls sideways
         // once its columns are dragged wider than the dialog.
@@ -415,7 +415,7 @@ fn table(ui: &mut egui::Ui, list: &[&Contributor], v: &mut View) {
 /// About ▸ Models: AI models credited in Co-Authored-By trailers.
 pub fn models_ui(ui: &mut egui::Ui) {
     if MODELS.is_empty() {
-        ui.label("No model credits were built into this copy.");
+        ui.label(crate::i18n::current(ui.ctx()).tr("No model credits were built into this copy."));
         return;
     }
     let assisted: u64 = MODELS.iter().map(|m| m.commits).max().unwrap_or(0).max(1);
@@ -595,7 +595,7 @@ mod tests {
                             body.row(20.0, |mut row| {
                                 for _ in natural {
                                     row.col(|ui| {
-                                        ui.label("x");
+                                        ui.label(crate::i18n::current(ui.ctx()).tr("x"));
                                     });
                                 }
                             });

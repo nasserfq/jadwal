@@ -189,7 +189,7 @@ pub(super) fn home(app: &mut SheetApp, ui: &mut Ui) {
                     }
                 }
                 ui.separator();
-                let more = ui.button("More Borders…");
+                let more = ui.button(crate::i18n::current(ui.ctx()).tr("More Borders…"));
                 if let Some(sequence) = keytip_table::item_letter(&prefix, "dialog:formatCells") {
                     keytip(app, ui, sequence, egui::pos2(more.rect.right() - 10.0, more.rect.center().y));
                 }
@@ -707,13 +707,13 @@ fn cf_menu(app: &mut SheetApp, ui: &mut Ui) {
                 app.open_dialog("cfQuick", json!({"type": "cellIs", "operator": op, "title": label}));
             }
         }
-        if ui.button("Text that Contains…").clicked() {
+        if ui.button(crate::i18n::current(ui.ctx()).tr("Text that Contains…")).clicked() {
             app.open_dialog("cfQuick", json!({"type": "containsText", "title": "Text that Contains"}));
         }
-        if ui.button("A Date Occurring…").clicked() {
+        if ui.button(crate::i18n::current(ui.ctx()).tr("A Date Occurring…")).clicked() {
             app.open_dialog("cfQuick", json!({"type": "timePeriod", "title": "A Date Occurring"}));
         }
-        if ui.button("Duplicate Values…").clicked() {
+        if ui.button(crate::i18n::current(ui.ctx()).tr("Duplicate Values…")).clicked() {
             act(app, "home.conditionalFormat", json!({"rule": {"type": "duplicate"}}));
         }
     });
@@ -769,7 +769,7 @@ fn cf_menu(app: &mut SheetApp, ui: &mut Ui) {
         }
     });
     ui.separator();
-    if ui.button("New Rule…").clicked() {
+    if ui.button(crate::i18n::current(ui.ctx()).tr("New Rule…")).clicked() {
         app.open_dialog("cfQuick", json!({"type": "expression", "title": "New Formatting Rule"}));
     }
     ui.menu_button("Clear Rules", |ui| {
@@ -782,7 +782,7 @@ fn cf_menu(app: &mut SheetApp, ui: &mut Ui) {
             ],
         );
     });
-    if ui.button("Manage Rules…").clicked() {
+    if ui.button(crate::i18n::current(ui.ctx()).tr("Manage Rules…")).clicked() {
         app.open_dialog("manageRules", json!({}));
     }
 }

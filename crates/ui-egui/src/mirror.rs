@@ -27,9 +27,22 @@ struct Window {
     last_keep: Option<Rect>,
     /// Windows registered this frame with [`overlay`].
     overlays: Vec<LayerId>,
-    /// Where last frame's floating layers were drawn, topmost first, and whether each was
-    /// mirrored (else moved with the document area), for input.
-    last_layers: Vec<(Rect, bool)>,
+    /// Menus registered this frame with [`menu`].
+    menus: Vec<LayerId>,
+    /// Where last frame's floating layers were drawn, topmost first, and how, for input.
+    last_layers: Vec<(Rect, Drawn)>,
+}
+
+/// How a floating layer is drawn.
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Drawn {
+    /// Mirrored with the whole interface.
+    Mirrored,
+    /// Moved with the document area.
+    Moved,
+    /// A menu opened on the sheet: moved with the document area and mirrored within its own
+    /// rect (`min.x + max.x` in layout), so it stays at the click and reads from the right.
+    Flipped(f32),
 }
 
 thread_local! {
@@ -73,6 +86,12 @@ pub fn overlay(ctx: &egui::Context, layer: LayerId) {
     with(ctx.viewport_id(), |w| w.overlays.push(layer));
 }
 
+/// A menu opened on the sheet (context, filter, fill and header menus) shown this frame: it
+/// stays where it opened, and reads from the right.
+pub fn menu(ctx: &egui::Context, layer: LayerId) {
+    with(ctx.viewport_id(), |w| w.menus.push(layer));
+}
+
 /// Shows a modal mirrored as a whole (see [`overlay`]).
 pub fn modal<R>(ctx: &egui::Context, modal: egui::Modal, add: impl FnOnce(&mut egui::Ui) -> R) -> egui::ModalResponse<R> {
     let shown = modal.show(ctx, add);
@@ -90,10 +109,11 @@ fn keep_dx(s: f32, keep: Rect) -> f32 {
 }
 
 /// A point as the user sees it, back to where the layout put it.
-fn to_layout(p: Pos2, s: f32, keep: Option<Rect>, layers: &[(Rect, bool)]) -> Pos2 {
+fn to_layout(p: Pos2, s: f32, keep: Option<Rect>, layers: &[(Rect, Drawn)]) -> Pos2 {
     match (layers.iter().find(|(r, _)| r.contains(p)), keep) {
-        (Some((_, true)), _) => return pos2(s - p.x, p.y),
-        (Some((_, false)), Some(k)) => return pos2(p.x - keep_dx(s, k), p.y),
+        (Some((_, Drawn::Mirrored)), _) => return pos2(s - p.x, p.y),
+        (Some((_, Drawn::Moved)), Some(k)) => return pos2(p.x - keep_dx(s, k), p.y),
+        (Some((_, Drawn::Flipped(a))), Some(k)) => return pos2(a - (p.x - keep_dx(s, k)), p.y),
         _ => {}
     }
     match keep {
@@ -140,14 +160,14 @@ pub fn output(ctx: &egui::Context) {
         let r = i.viewport_rect();
         r.min.x + r.max.x
     });
-    let (keep, overlays) = with(ctx.viewport_id(), |w| {
+    let (keep, overlays, menus) = with(ctx.viewport_id(), |w| {
         let keep = w.keep.take();
         w.last_keep = keep;
         w.last_layers.clear();
         if s > 0.0 {
             w.span = s;
         }
-        (keep, std::mem::take(&mut w.overlays))
+        (keep, std::mem::take(&mut w.overlays), std::mem::take(&mut w.menus))
     });
     ACTIVE.set(crate::i18n::current(ctx).is_rtl());
     if !active() || s <= 0.0 {
@@ -162,19 +182,35 @@ pub fn output(ctx: &egui::Context) {
     let rect = |id: LayerId| ctx.memory(|m| m.area_rect(id.id));
     let floating: Vec<(LayerId, Rect)> = ids.iter().filter(|id| id.order != Order::Background).filter_map(|&id| Some((id, rect(id)?))).collect();
     let modes = layer_modes(&floating, &overlays, keep);
+    let drawn: Vec<Drawn> = floating
+        .iter()
+        .zip(&modes)
+        .map(|(&(id, r), &whole)| match (whole, menus.contains(&id)) {
+            (true, _) => Drawn::Mirrored,
+            (false, true) => Drawn::Flipped(r.min.x + r.max.x),
+            (false, false) => Drawn::Moved,
+        })
+        .collect();
     with(ctx.viewport_id(), |w| {
-        w.last_layers = floating.iter().zip(&modes).rev().map(|(&(_, r), &whole)| (to_screen_as(r, s, keep, whole), whole)).collect();
+        w.last_layers = floating.iter().zip(&drawn).rev().map(|(&(_, r), &d)| (to_screen_as(r, s, keep, d == Drawn::Mirrored), d)).collect();
     });
     ctx.graphics_mut(|g| {
         for id in ids {
-            let mode = floating.iter().position(|&(f, _)| f == id).map(|i| modes[i]);
+            let mode = floating.iter().position(|&(f, _)| f == id).and_then(|i| drawn.get(i).copied());
             if let Some(list) = g.get_mut(id) {
                 for i in 0..list.next_idx().0 {
                     list.mutate_shape(ShapeIdx(i), |c| match (mode, keep) {
-                        (Some(false), Some(k)) => {
+                        (Some(Drawn::Moved), Some(k)) => {
                             let d = vec2(keep_dx(s, k), 0.0);
                             c.clip_rect = c.clip_rect.translate(d);
                             c.shape.translate(d);
+                        }
+                        (Some(Drawn::Flipped(a)), Some(k)) => {
+                            clipped(c, a, None);
+                            let d = vec2(keep_dx(s, k), 0.0);
+                            c.clip_rect = c.clip_rect.translate(d);
+                            c.shape.translate(d);
+                            c.transform_after_tessellation.translation.x += d.x - c.transform_after_tessellation.scaling * d.x;
                         }
                         (Some(_), _) => clipped(c, s, None),
                         (None, _) => clipped(c, s, keep),
@@ -186,12 +222,21 @@ pub fn output(ctx: &egui::Context) {
     ctx.output_mut(|o| {
         if let Some(ime) = &mut o.ime {
             // A text field in a dialog is mirrored with its dialog.
-            let keep = match floating.iter().zip(&modes).rev().find(|((_, r), _)| r.contains_rect(ime.rect)) {
-                Some((_, true)) => None,
-                _ => keep,
-            };
-            ime.rect = to_screen(ime.rect, s, keep);
-            ime.cursor_rect = to_screen(ime.cursor_rect, s, keep);
+            match floating.iter().zip(&drawn).rev().find(|((_, r), _)| r.contains_rect(ime.rect)) {
+                Some((_, Drawn::Mirrored)) => {
+                    ime.rect = to_screen(ime.rect, s, None);
+                    ime.cursor_rect = to_screen(ime.cursor_rect, s, None);
+                }
+                Some((_, &Drawn::Flipped(a))) => {
+                    let d = vec2(keep.map_or(0.0, |k| keep_dx(s, k)), 0.0);
+                    ime.rect = mirror_rect(a, ime.rect).translate(d);
+                    ime.cursor_rect = mirror_rect(a, ime.cursor_rect).translate(d);
+                }
+                _ => {
+                    ime.rect = to_screen(ime.rect, s, keep);
+                    ime.cursor_rect = to_screen(ime.cursor_rect, s, keep);
+                }
+            }
         }
     });
 }
@@ -299,14 +344,18 @@ mod tests {
         let drawn = to_screen(r, s, keep);
         assert_eq!(to_layout(drawn.center(), s, keep, &[]), r.center());
         // Over a dialog drawn above the document area: mirrored like the rest of the interface.
-        let dialog = [(Rect::from_min_max(pos2(120.0, 90.0), pos2(400.0, 300.0)), true)];
+        let dialog = [(Rect::from_min_max(pos2(120.0, 90.0), pos2(400.0, 300.0)), Drawn::Mirrored)];
         assert_eq!(to_layout(pos2(150.0, 100.0), s, keep, &dialog), pos2(850.0, 100.0));
+        // A context menu laid out at 300..400 is drawn at 200..300 (the area's shift), mirrored
+        // within itself: its left edge on screen is its right edge in layout.
+        let menu = [(Rect::from_min_max(pos2(200.0, 400.0), pos2(300.0, 500.0)), Drawn::Flipped(700.0))];
+        assert_eq!(to_layout(pos2(201.0, 450.0), s, keep, &menu), pos2(399.0, 450.0));
     }
 
     #[test]
     fn floating_layers_follow_where_they_opened() {
         let keep = Some(Rect::from_min_max(pos2(0.0, 100.0), pos2(1000.0, 800.0)));
-        let l = |n: &str, o, r: [f32; 4]| (LayerId::new(o, egui::Id::new(n)), Rect::from_min_max(pos2(r[0], r[1]), pos2(r[2], r[3])));
+        let l = |n: &str, o, r: [f32; 4]| (LayerId::new(o, egui::Id::unique(n)), Rect::from_min_max(pos2(r[0], r[1]), pos2(r[2], r[3])));
         let dialog = l("dialog", Order::Middle, [300.0, 200.0, 700.0, 500.0]);
         let floating = [
             dialog,

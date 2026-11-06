@@ -1220,6 +1220,153 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "An Arabic, right-to-left spreadsheet by Nasser Alqahtani, built on GridCraft, the open-source spreadsheet by the ArtCraft team." => {
             "جدول برنامج جداول بيانات عربي من اليمين إلى اليسار، صنعه ناصر القحطاني على أساس GridCraft، برنامج الجداول مفتوح المصدر من فريق ArtCraft."
         }
+        "Advanced" => "خيارات متقدمة",
+        "Advanced Filter" => "تصفية متقدمة",
+        "Arrange\nAll" => "ترتيب\nالكل",
+        "Arrange All" => "ترتيب الكل",
+        "Check for\nUpdates…" => "التحقق من\nالتحديثات…",
+        "Check for Updates…" => "التحقق من التحديثات…",
+        "Look for a newer GridCraft release" => "البحث عن إصدار أحدث من جدول",
+        "Insert an equation, or pick one from the gallery" => "إدراج معادلة، أو اختيار واحدة من المعرض",
+        "New\nWindow" => "نافذة\nجديدة",
+        "New Window" => "نافذة جديدة",
+        "Outline Settings" => "إعدادات المخطط التفصيلي",
+        "Settings" => "الإعدادات",
+        "Resize\nTable" => "تغيير حجم\nالجدول",
+        "Resize Table" => "تغيير حجم الجدول",
+        "Run a macro on the selection" => "تشغيل ماكرو على التحديد",
+        "Write a macro step by step" => "كتابة ماكرو خطوة بخطوة",
+        "Switch\nWindows" => "تبديل\nالنوافذ",
+        "Switch Windows" => "تبديل النوافذ",
+        "Collapse Ribbon" => "طي الشريط",
+        "Arrange Windows" => "ترتيب النوافذ",
+        "Arrange" => "ترتيب",
+        "Cascade" => "متتالية",
+        "Banded Rows" => "صفوف ذات نطاقات",
+        "Banded Columns" => "أعمدة ذات نطاقات",
+        "Auto Fill Options" => "خيارات التعبئة التلقائية",
+        "Copy Cells" => "نسخ الخلايا",
+        "Can't Undo" => "لا يمكن التراجع",
+        "  OK  " => "  موافق  ",
+        " Cancel " => " إلغاء ",
+        " Close " => " إغلاق ",
+        "Add Watch (active cell)" => "إضافة مراقبة (الخلية النشطة)",
+        "At most" => "على الأكثر",
+        "Available for column, bar, line, area and compatible combo charts." => {
+            "متاح للمخططات العمودية والشريطية والخطية والمساحية والمخططات المركبة المتوافقة."
+        }
+        "Cell" => "الخلية",
+        "Change…" => "تغيير…",
+        "Columns:" => "الأعمدة:",
+        "Command:" => "الأمر:",
+        "Data rows:" => "صفوف البيانات:",
+        "Description:" => "الوصف:",
+        "Don't Replace" => "عدم الاستبدال",
+        "Each column must hold:" => "يجب أن يحتوي كل عمود على:",
+        "Example (what Check, Run and Debug use here):" => "مثال (ما يستخدمه الفحص والتشغيل والتصحيح هنا):",
+        "For each" => "لكل",
+        "Formula" => "الصيغة",
+        "GridCraft is fully drivable by agents. Every menu item, button and gesture is a command:" => {
+            "يمكن للوكلاء التحكم في جدول بالكامل. كل عنصر قائمة وزر وإيماءة هو أمر:"
+        }
+        "If cell" => "إذا كانت الخلية",
+        "Keep Changes" => "الاحتفاظ بالتغييرات",
+        "Keep the changes the macro has made so far? They are one undo step either way." => {
+            "هل تريد الاحتفاظ بالتغييرات التي أجراها الماكرو حتى الآن؟ إنها خطوة تراجع واحدة في الحالتين."
+        }
+        "LaTeX:" => "LaTeX:",
+        "Macro name:" => "اسم الماكرو:",
+        "Message:" => "الرسالة:",
+        "Model Range:" => "نطاق النموذج:",
+        "No contributor data was built into this copy." => "لا توجد بيانات عن المساهمين في هذه النسخة.",
+        "No model credits were built into this copy." => "لا توجد إشادات بالنماذج في هذه النسخة.",
+        "Orientation:" => "الاتجاه:",
+        "Output anchor (what the Output token stands for):" => "مرساة الإخراج (ما يمثله رمز الإخراج):",
+        "Output to (optional):" => "الإخراج إلى (اختياري):",
+        "Parameters (JSON):" => "المعلمات (JSON):",
+        "Preview" => "معاينة",
+        "Reports:" => "التقارير:",
+        "Reset All" => "إعادة تعيين الكل",
+        "Run it on:" => "تشغيله على:",
+        "Scripts in this workbook came from a file and are disabled." => "البرامج النصية في هذا المصنف جاءت من ملف وهي معطلة.",
+        "Send" => "إرسال",
+        "Shape:" => "الشكل:",
+        "Shortcut key:" => "مفتاح الاختصار:",
+        "Text:" => "النص:",
+        "The chart no longer exists." => "لم يعد المخطط موجودًا.",
+        "Trust Scripts" => "الوثوق بالبرامج النصية",
+        "Undo Changes" => "التراجع عن التغييرات",
+        "Use current selection as example" => "استخدام التحديد الحالي كمثال",
+        "When results would land on cells that hold data:" => "عندما تقع النتائج على خلايا تحتوي على بيانات:",
+        "of:" => "من:",
+        "times" => "مرات",
+        "↑  Sort Ascending" => "↑  فرز تصاعدي",
+        "↓  Sort Descending" => "↓  فرز تنازلي",
+        "   OK   " => "   موافق   ",
+        "  Solve  " => "  حل  ",
+        "Agents and other programs that run the macro get an error instead of the question." => {
+            "الوكلاء والبرامج الأخرى التي تشغّل الماكرو تتلقى خطأ بدلًا من السؤال."
+        }
+        "Always run on this range" => "التشغيل دائمًا على هذا النطاق",
+        "Breakpoint" => "نقطة توقف",
+        "Check shows on the grid what the macro reads and writes. Click a step's gutter to set a breakpoint." => {
+            "يعرض الفحص على الشبكة ما يقرؤه الماكرو وما يكتبه. انقر هامش الخطوة لتعيين نقطة توقف."
+        }
+        "Create" => "إنشاء",
+        "Data Labels" => "تسميات البيانات",
+        "Enabled" => "ممكّن",
+        "Every cell must hold something" => "يجب أن تحتوي كل خلية على شيء",
+        "First row holds column names" => "الصف الأول يحتوي على أسماء الأعمدة",
+        "Grab bag" => "منوعات",
+        "Inside, Row (or Column) stands for the current one, e.g. Row.right." => {
+            "في الداخل، يمثل Row (أو Column) الصف (أو العمود) الحالي، مثل Row.right."
+        }
+        "Leave it empty when no step uses Output. A token such as Input.right keeps it beside the data." => {
+            "اتركه فارغًا إذا لم تستخدم أي خطوة Output. رمز مثل Input.right يبقيه بجانب البيانات."
+        }
+        "Load" => "تحميل",
+        "Load/Save" => "تحميل/حفظ",
+        "Macros preserved (not executed)" => "وحدات الماكرو محفوظة (غير منفذة)",
+        "No command matches." => "لا يوجد أمر مطابق.",
+        "No comments on this sheet yet. Select a cell and choose New Comment." => "لا توجد تعليقات في هذه الورقة بعد. حدد خلية واختر تعليق جديد.",
+        "No inputs: the macro works on fixed cells only." => "لا مدخلات: يعمل الماكرو على خلايا ثابتة فقط.",
+        "No macros in this workbook" => "لا توجد وحدات ماكرو في هذا المصنف",
+        "No steps yet. Add Step picks a command, or record one with Automate › Record Macro." => {
+            "لا توجد خطوات بعد. «إضافة خطوة» تختار أمرًا، أو سجّل واحدًا من أتمتة › تسجيل ماكرو."
+        }
+        "Options…" => "خيارات…",
+        "Rel" => "نسبي",
+        "Require Bounds on Variables" => "طلب حدود للمتغيرات",
+        "Resolved" => "تم الحل",
+        "Run" => "تشغيل",
+        "Runs with:" => "يعمل مع:",
+        "Select a chart to format it." => "حدد مخططًا لتنسيقه.",
+        "Select a step to see its settings." => "حدد خطوة لرؤية إعداداتها.",
+        "Step Into" => "الدخول خطوة",
+        "Stop debugging" => "إيقاف التصحيح",
+        "Table Name:" => "اسم الجدول:",
+        "The ranges the macro works on. Each is checked before the macro runs." => {
+            "النطاقات التي يعمل عليها الماكرو. يتم فحص كل منها قبل تشغيل الماكرو."
+        }
+        "There are no shapes, pictures or charts on this sheet." => "لا توجد أشكال أو صور أو مخططات في هذه الورقة.",
+        "This workbook also has a VBA project. GridCraft keeps it when you save but does not run it." => {
+            "يحتوي هذا المصنف أيضًا على مشروع VBA. يحتفظ به جدول عند الحفظ لكنه لا يشغّله."
+        }
+        "This workbook has no macros yet." => "لا يحتوي هذا المصنف على وحدات ماكرو بعد.",
+        "Undo what the macro did before stopping" => "التراجع عما فعله الماكرو قبل التوقف",
+        "column" => "عمود",
+        "range" => "نطاق",
+        "row" => "صف",
+        "single cell" => "خلية واحدة",
+        "GRG Nonlinear: a local optimum of a smooth model, from the current values." => {
+            "غير خطي (GRG): حل أمثل محلي لنموذج سلس، انطلاقًا من القيم الحالية."
+        }
+        "Simplex LP: for linear models; integer and binary constraints by branch and bound." => {
+            "خطي مبسط (Simplex LP): للنماذج الخطية؛ القيود الصحيحة والثنائية بالتفرع والتحديد."
+        }
+        "Evolutionary: a genetic search for models that aren't smooth; every variable cell needs bounds." => {
+            "تطوري: بحث جيني للنماذج غير السلسة؛ تحتاج كل خلية متغيرة إلى حدود."
+        }
         _ => return None,
     })
 }

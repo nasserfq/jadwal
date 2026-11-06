@@ -146,7 +146,7 @@ pub fn editor(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, confirm: &m
         }
     });
     ui.add_space(6.0);
-    ui.label("LaTeX:");
+    ui.label(crate::i18n::current(ui.ctx()).tr("LaTeX:"));
     let pv = preview(ui.ctx(), ui.scope_id().with("equation-preview"), &text);
     let mark = pv.result.as_ref().err().and_then(|e| e.span.clone()).or_else(|| pv.result.as_ref().err().map(|_| text.len()..text.len()));
     let mark = mark.filter(|_| !text.trim().is_empty());
@@ -171,7 +171,7 @@ pub fn editor(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, confirm: &m
             ui.colored_label(t.danger, msg);
         }
         _ => {
-            ui.label(egui::RichText::new("Preview").color(t.text_dim));
+            ui.label(egui::RichText::new(crate::i18n::current(ui.ctx()).tr("Preview")).color(t.text_dim));
         }
     }
     // The preview card is the sheet's colour, with the sheet's ink, in both themes.
@@ -194,11 +194,16 @@ pub fn editor(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, confirm: &m
     let valid = pv.result.as_ref().is_ok_and(|l| !l.items.is_empty());
     let cmd_enter = ui.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, Key::Enter));
     ui.allocate_ui_with_layout(vec2(ui.available_width(), 28.0), egui::Layout::right_to_left(egui::Align::Center), |ui| {
-        let ok = ui.add_enabled(valid, egui::Button::new(egui::RichText::new("OK").color(t.on_accent)).fill(t.accent).min_size(vec2(64.0, 0.0)));
+        let ok = ui.add_enabled(
+            valid,
+            egui::Button::new(egui::RichText::new(crate::i18n::current(ui.ctx()).tr("OK")).color(t.on_accent))
+                .fill(t.accent)
+                .min_size(vec2(64.0, 0.0)),
+        );
         if ok.clicked() || (valid && cmd_enter) {
             *confirm = true;
         }
-        if ui.add(egui::Button::new("Cancel").min_size(vec2(64.0, 0.0))).clicked() {
+        if ui.add(egui::Button::new(crate::i18n::current(ui.ctx()).tr("Cancel")).min_size(vec2(64.0, 0.0))).clicked() {
             *open = false;
         }
         let verb = if d.command == Some("equation.edit") { "apply" } else { "insert" };
