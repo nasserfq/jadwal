@@ -35,10 +35,10 @@ impl eframe::App for App {
         #[cfg(target_os = "macos")]
         {
             // Built in the interface language, and again when the language changes.
-            let stale = self.2.as_ref().is_none_or(|m| m.language != self.0.language);
+            let stale = self.2.as_ref().is_none_or(|m| m.language != self.0.ui.language);
             if stale && std::env::var_os("GRIDCRAFT_NO_NATIVE_MENU").is_none() {
                 self.2 = None;
-                self.2 = Some(native_menu::NativeMenu::install(ctx, self.0.language));
+                self.2 = Some(native_menu::NativeMenu::install(ctx, self.0.ui.language));
             }
             if let Some(m) = &mut self.2 {
                 m.poll(&mut self.0, ctx, self.1.focused_viewport());

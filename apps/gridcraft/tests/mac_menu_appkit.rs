@@ -21,6 +21,7 @@ fn main() {
     let ctx = egui::Context::default();
     let mut menu = native_menu::NativeMenu::install(&ctx, gridcraft_ui_egui::i18n::Language::En);
 
+    assert_eq!(menu.language, gridcraft_ui_egui::i18n::Language::En, "built in the language asked for");
     let bar = nsapp.mainMenu().expect("a main menu");
     let tops: Vec<String> = (0..bar.numberOfItems()).filter_map(|i| bar.itemAtIndex(i)?.submenu()).map(|m| m.title().to_string()).collect();
     assert_eq!(tops, [gridcraft_ui_egui::APP_NAME, "File", "Edit", "View", "Insert", "Format", "Tools", "Data", "Window", "Help"]);
