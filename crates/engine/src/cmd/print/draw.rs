@@ -172,10 +172,28 @@ pub(super) struct Block<'a> {
     pub(super) ys: Vec<f32>,
     pub(super) k: f32,
     pub(super) scale: f32,
+    /// A right-to-left sheet prints mirrored, column A on the right: page x maps to `m − x`
+    /// (`m` is the page width, so the block keeps the same margin from the right edge).
+    pub(super) mirror: Option<f32>,
 }
 
 impl Block<'_> {
+    /// Page x of a left-to-right layout position.
+    pub(super) fn mx(&self, x: f32) -> f32 {
+        self.mirror.map_or(x, |m| m - x)
+    }
+    /// The block's left and right page edges.
+    pub(super) fn span(&self) -> (f32, f32) {
+        let (a, b) = (self.xs.first().copied().unwrap_or(0.0), self.xs.last().copied().unwrap_or(0.0));
+        let (a, b) = (self.mx(a), self.mx(b));
+        (a.min(b), a.max(b))
+    }
+    /// Page x of column `col`'s leading edge (its left edge, or its right edge when mirrored).
     fn x(&self, col: u32) -> f32 {
+        let x = self.ltr_x(col);
+        self.mx(x)
+    }
+    fn ltr_x(&self, col: u32) -> f32 {
         if col >= self.cols.0 && col <= self.cols.1 + 1 {
             return self.xs.get((col - self.cols.0) as usize).copied().unwrap_or(0.0);
         }
@@ -191,7 +209,8 @@ impl Block<'_> {
     }
     pub(super) fn rect(&self, r: RangeRef) -> (f32, f32, f32, f32) {
         let (x0, y0) = (self.x(r.start.col), self.y(r.start.row));
-        (x0, y0, self.x(r.end.col.saturating_add(1)) - x0, self.y(r.end.row.saturating_add(1)) - y0)
+        let x1 = self.x(r.end.col.saturating_add(1));
+        (x0.min(x1), y0, (x1 - x0).abs(), self.y(r.end.row.saturating_add(1)) - y0)
     }
     pub(super) fn range(&self) -> RangeRef {
         RangeRef::new(CellRef::new(self.rows.0, self.cols.0), CellRef::new(self.rows.1, self.cols.1))
@@ -230,8 +249,8 @@ fn draw_border(pg: &mut Page, b: &BorderLine, wb: &Workbook, start: Point, end: 
 
 /// Draws the cells of a block: fills, gridlines, data bars, borders and text.
 pub(super) fn draw_block(pg: &mut Page, b: &Block, gridlines: bool, cf: &mut Option<crate::cf::CfCache>) {
-    let (bx, by) = (b.xs.first().copied().unwrap_or(0.0), b.ys.first().copied().unwrap_or(0.0));
-    let (bw, bh) = (b.xs.last().copied().unwrap_or(bx) - bx, b.ys.last().copied().unwrap_or(by) - by);
+    let ((bx, right), by) = (b.span(), b.ys.first().copied().unwrap_or(0.0));
+    let (bw, bh) = (right - bx, b.ys.last().copied().unwrap_or(by) - by);
     if bw <= 0.0 || bh <= 0.0 {
         return;
     }
@@ -256,7 +275,8 @@ pub(super) fn draw_block(pg: &mut Page, b: &Block, gridlines: bool, cf: &mut Opt
         let grey = [0xB0, 0xB0, 0xB0];
         let lw = (0.35 * b.scale).clamp(0.1, 0.5);
         for x in &b.xs {
-            pg.stroke_line(*x, by, *x, by + bh, lw, grey);
+            let x = b.mx(*x);
+            pg.stroke_line(x, by, x, by + bh, lw, grey);
         }
         for y in &b.ys {
             pg.stroke_line(bx, *y, bx + bw, *y, lw, grey);
@@ -329,9 +349,11 @@ pub(super) fn draw_block(pg: &mut Page, b: &Block, gridlines: bool, cf: &mut Opt
             ),
             None => (bd.right, bd.bottom),
         };
+        // Mirrored, a cell's left border is drawn on its right and its right border on its left.
+        let (left, right) = if b.mirror.is_some() { (right, bd.left) } else { (bd.left, right) };
         draw_border(pg, &bd.top, b.wb, Point::new(x, y), Point::new(x + w, y), b.k);
         draw_border(pg, &bottom, b.wb, Point::new(x, y + h), Point::new(x + w, y + h), b.k);
-        draw_border(pg, &bd.left, b.wb, Point::new(x, y), Point::new(x, y + h), b.k);
+        draw_border(pg, &left, b.wb, Point::new(x, y), Point::new(x, y + h), b.k);
         draw_border(pg, &right, b.wb, Point::new(x + w, y), Point::new(x + w, y + h), b.k);
         draw_border(pg, &bd.diag_down, b.wb, Point::new(x, y), Point::new(x + w, y + h), b.k);
         draw_border(pg, &bd.diag_up, b.wb, Point::new(x, y + h), Point::new(x + w, y), b.k);
@@ -399,6 +421,8 @@ pub(super) struct PrintedBlock {
     pub(super) x: f32,
     pub(super) y: f32,
     pub(super) k: f32,
+    /// See [`Block::mirror`].
+    pub(super) mirror: Option<f32>,
 }
 
 /// PDF annotations are not affected by graphics clipping, so intersect each cell with its page
@@ -406,7 +430,8 @@ pub(super) struct PrintedBlock {
 /// pages and receives one annotation on each of them.
 pub(super) fn draw_block_links(pg: &mut Page, b: &Block, page: usize, pending: &mut Vec<PendingPdfLink>) {
     let range = b.range();
-    let (Some(&bx), Some(&by), Some(&right), Some(&bottom)) = (b.xs.first(), b.ys.first(), b.xs.last(), b.ys.last()) else { return };
+    let (Some(&by), Some(&bottom)) = (b.ys.first(), b.ys.last()) else { return };
+    let (bx, right) = b.span();
     for (cell, link) in b.sh.hyperlinks.range(range.start..=range.end) {
         if !range.contains(*cell) {
             continue;
@@ -436,6 +461,7 @@ pub(super) fn printed_target(wb: &Workbook, blocks: &[PrintedBlock], source_shee
     let sh = wb.sheet(sheet)?;
     let block = blocks.iter().find(|b| b.sheet == sheet && (b.rows.0..=b.rows.1).contains(&cell.row) && (b.cols.0..=b.cols.1).contains(&cell.col))?;
     let x = block.x + (sh.col_left(cell.col) - sh.col_left(block.cols.0)) as f32 * block.k;
+    let x = block.mirror.map_or(x, |m| m - x);
     let y = block.y + (sh.row_top(cell.row) - sh.row_top(block.rows.0)) as f32 * block.k;
     Some((block.page, x, y))
 }
@@ -448,7 +474,8 @@ pub(super) fn draw_headings(pg: &mut Page, b: &Block, col_heads: bool, row_heads
     if col_heads {
         let y = at.1;
         for col in b.cols.0..=b.cols.1 {
-            let (x0, x1) = (b.x(col), b.x(col + 1));
+            let (a, z) = (b.x(col), b.x(col + 1));
+            let (x0, x1) = (a.min(z), a.max(z));
             if x1 - x0 <= 0.0 {
                 continue;
             }
@@ -460,7 +487,8 @@ pub(super) fn draw_headings(pg: &mut Page, b: &Block, col_heads: bool, row_heads
         }
     }
     if row_heads {
-        let x = at.0;
+        // Mirrored, the row numbers stand right of the sheet.
+        let x = if b.mirror.is_some() { b.mx(at.0) - size.0 } else { at.0 };
         for row in b.rows.0..=b.rows.1 {
             let (y0, y1) = (b.y(row), b.y(row + 1));
             if y1 - y0 <= 0.0 {
@@ -501,5 +529,5 @@ pub(super) fn make_block<'a>(
         acc += sh.row_height(r) * k;
         ys.push(acc);
     }
-    Block { wb, si, sh, rows, cols, xs, ys, k, scale: lay.scale }
+    Block { wb, si, sh, rows, cols, xs, ys, k, scale: lay.scale, mirror: sh.right_to_left.then_some(lay.page_w) }
 }

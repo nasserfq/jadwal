@@ -66,15 +66,18 @@ fn font_for(style: &Style) -> Font {
     Font::styled(Font::family_for(&style.font.name), style.font.bold, style.font.italic)
 }
 
-fn text_align(align: HAlign, value: &Value) -> HAlign {
+/// The physical alignment of a cell's text. On a right-to-left sheet General text starts at the
+/// right and numbers sit at the left, as on screen.
+fn text_align(align: HAlign, value: &Value, rtl: bool) -> HAlign {
+    let (start, end) = if rtl { (HAlign::Right, HAlign::Left) } else { (HAlign::Left, HAlign::Right) };
     match align {
         HAlign::General => match value {
-            Value::Number(_) => HAlign::Right,
+            Value::Number(_) => end,
             Value::Bool(_) | Value::Error(_) => HAlign::Center,
-            _ => HAlign::Left,
+            _ => start,
         },
         HAlign::CenterAcross | HAlign::Distributed => HAlign::Center,
-        HAlign::Justify | HAlign::Fill => HAlign::Left,
+        HAlign::Justify | HAlign::Fill => start,
         other => other,
     }
 }
@@ -84,7 +87,17 @@ fn empty_for_overflow(sh: &Sheet, c: CellRef, merges: &[RangeRef]) -> bool {
     sh.value_ref(c).is_none_or(|v| v.is_empty()) && !merges.iter().any(|m| m.contains(c))
 }
 
-fn extend_text_bounds(sh: &Sheet, c: CellRef, merges: &[RangeRef], k: f32, need: f32, align: HAlign, bounds: (f32, f32)) -> (f32, f32) {
+/// The clip of text overflowing into empty neighbours of a cell aligned `align`. `leftward` is the
+/// column step towards the left of the page: −1, or +1 on a mirrored (right-to-left) sheet.
+fn extend_text_bounds(
+    sh: &Sheet,
+    c: CellRef,
+    merges: &[RangeRef],
+    k: f32,
+    need: f32,
+    (align, leftward): (HAlign, i64),
+    bounds: (f32, f32),
+) -> (f32, f32) {
     let (mut clip_l, mut clip_r) = bounds;
     let grow = |dir: i64, mut remaining: f32| -> f32 {
         let mut ext = 0.0;
@@ -105,12 +118,12 @@ fn extend_text_bounds(sh: &Sheet, c: CellRef, merges: &[RangeRef], k: f32, need:
         ext
     };
     match align {
-        HAlign::Right => clip_l -= grow(-1, need),
+        HAlign::Right => clip_l -= grow(leftward, need),
         HAlign::Center => {
-            clip_l -= grow(-1, need / 2.0);
-            clip_r += grow(1, need / 2.0);
+            clip_l -= grow(leftward, need / 2.0);
+            clip_r += grow(-leftward, need / 2.0);
         }
-        _ => clip_r += grow(1, need),
+        _ => clip_r += grow(-leftward, need),
     }
     (clip_l, clip_r)
 }
@@ -193,7 +206,8 @@ pub(super) fn draw_text(pg: &mut Page, b: &Block, placement: TextPlacement<'_>) 
         text = "#".repeat(((avail / hash).floor().max(1.0) as usize).min(255));
         tw = gridcraft_pdf::text_width(font, size, &text);
     }
-    let h_align = text_align(st.align.h, &v);
+    let rtl = b.mirror.is_some();
+    let h_align = text_align(st.align.h, &v, rtl);
     let rot = st.align.rotation;
     let rotated = rot != 0 && rot != 255;
     // Rotated text wraps along its own direction: upright (±90°) text to the row height.
@@ -214,10 +228,12 @@ pub(super) fn draw_text(pg: &mut Page, b: &Block, placement: TextPlacement<'_>) 
     // Center Across Selection spans the empty Center Across cells to its right; the text stays within that run.
     let spans = st.align.h == HAlign::CenterAcross && !wrap && !merged && rot == 0;
     let across = if spans { center_across_width(&wb.styles, sh, c, merges) * b.k } else { 0.0 };
-    let (mut clip_l, mut clip_r) = (x, x + w + across);
+    // The Center Across cells follow the cell: to its right, or to its left when mirrored.
+    let x_across = if rtl { x - across } else { x };
+    let (mut clip_l, mut clip_r) = (x_across, x_across + w + across);
     if !wrap && !merged && !is_num && rot.abs() != 90 && across <= 0.0 && tw + 2.0 * pad + indent > w {
         let need = tw + 2.0 * pad + indent - w;
-        (clip_l, clip_r) = extend_text_bounds(sh, c, merges, b.k, need, h_align, (clip_l, clip_r));
+        (clip_l, clip_r) = extend_text_bounds(sh, c, merges, b.k, need, (h_align, if rtl { 1 } else { -1 }), (clip_l, clip_r));
     }
     let clip_l = clip_l.max(limits.0);
     let clip_r = clip_r.min(limits.1);
@@ -262,7 +278,7 @@ pub(super) fn draw_text(pg: &mut Page, b: &Block, placement: TextPlacement<'_>) 
         let lw = gridcraft_pdf::text_width(font, size, line);
         let lx = match h_align {
             HAlign::Right => x + w - pad - lw - indent,
-            HAlign::Center => x + (w + across - lw) / 2.0,
+            HAlign::Center => x_across + (w + across - lw) / 2.0,
             _ => x + pad + indent,
         };
         let ly = first_baseline + i as f32 * line_h;
