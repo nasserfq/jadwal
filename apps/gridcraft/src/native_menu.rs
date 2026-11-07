@@ -1,10 +1,12 @@
 //! macOS: the native menu bar (File, Edit, View, Insert, Format, Tools, Data, Window, Help), as
-//! a desktop spreadsheet has on the Mac. Items run the same commands as the ribbon.
+//! a desktop spreadsheet has on the Mac. Items run the same commands as the ribbon. Labels are in
+//! the interface language (Arabic by default), and the app menu names the app جدول.
 
 use std::str::FromStr;
 use std::sync::mpsc::{Receiver, channel};
 
-use gridcraft_ui_egui::{OpenWindow, SheetApp};
+use gridcraft_ui_egui::i18n::Language;
+use gridcraft_ui_egui::{APP_NAME, OpenWindow, SheetApp};
 use muda::accelerator::Accelerator;
 use muda::{CheckMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu};
 use serde_json::{Value, json};
@@ -190,8 +192,30 @@ fn tree() -> Vec<(&'static str, Vec<Entry>)> {
     ]
 }
 
+/// `label` in `language`. A label ending in "…" whose bare text is translated keeps the "…".
+fn tr(language: Language, label: &str) -> String {
+    let translated = language.tr(label);
+    if translated != label {
+        return translated.to_owned();
+    }
+    if let Some(bare) = label.strip_suffix('…') {
+        let translated = language.tr(bare);
+        if translated != bare {
+            return format!("{translated}…");
+        }
+    }
+    label.to_owned()
+}
+
+/// An app-menu label such as "About {app}", in `language`, naming the app.
+fn app_item(language: Language, label: &str) -> String {
+    language.tr(label).replace("{app}", APP_NAME)
+}
+
 pub struct NativeMenu {
     _menu: Menu,
+    /// The language the labels are in; the menu is rebuilt when the interface language changes.
+    pub language: Language,
     events: Receiver<MenuEvent>,
     theme_items: Vec<(&'static str, CheckMenuItem)>,
     window_menu: Option<Submenu>,
@@ -219,35 +243,35 @@ fn select_theme(app: &mut SheetApp, id: &str) -> bool {
 }
 
 impl NativeMenu {
-    pub fn install(ctx: &egui::Context) -> NativeMenu {
+    pub fn install(ctx: &egui::Context, language: Language) -> NativeMenu {
         let menu = Menu::new();
-        let app_menu = Submenu::new("GridCraft", true);
-        let about = MenuItem::with_id("dialog:about", "About GridCraft", true, None);
+        let app_menu = Submenu::new(APP_NAME, true);
+        let about = MenuItem::with_id("dialog:about", app_item(language, "About {app}"), true, None);
         let _ = app_menu.append_items(&[
             &about,
             &PredefinedMenuItem::separator(),
-            &PredefinedMenuItem::services(None),
+            &PredefinedMenuItem::services(Some(&tr(language, "Services"))),
             &PredefinedMenuItem::separator(),
-            &PredefinedMenuItem::hide(None),
-            &PredefinedMenuItem::hide_others(None),
-            &PredefinedMenuItem::show_all(None),
+            &PredefinedMenuItem::hide(Some(&app_item(language, "Hide {app}"))),
+            &PredefinedMenuItem::hide_others(Some(&tr(language, "Hide Others"))),
+            &PredefinedMenuItem::show_all(Some(&tr(language, "Show All"))),
             &PredefinedMenuItem::separator(),
-            &MenuItem::with_id(QUIT, "Quit GridCraft", true, Accelerator::from_str("CMD+Q").ok()),
+            &MenuItem::with_id(QUIT, app_item(language, "Quit {app}"), true, Accelerator::from_str("CMD+Q").ok()),
         ]);
         let _ = menu.append(&app_menu);
         let mut theme_items = Vec::new();
         let mut window_menu = None;
         for (title, entries) in tree() {
-            let sub = Submenu::new(title, true);
+            let sub = Submenu::new(tr(language, title), true);
             for (label, id, acc) in entries {
                 if label == "-" {
                     let _ = sub.append(&PredefinedMenuItem::separator());
                     continue;
                 }
                 if id == "view.theme" {
-                    let themes = Submenu::new(label, true);
+                    let themes = Submenu::new(tr(language, label), true);
                     for (mode, label) in [("system", "System"), ("light", "Light"), ("dark", "Dark")] {
-                        let item = CheckMenuItem::with_id(format!("theme:{mode}"), label, true, false, None);
+                        let item = CheckMenuItem::with_id(format!("theme:{mode}"), tr(language, label), true, false, None);
                         let _ = themes.append(&item);
                         theme_items.push((mode, item));
                     }
@@ -255,7 +279,7 @@ impl NativeMenu {
                     continue;
                 }
                 let accel = acc.and_then(|a| Accelerator::from_str(a).ok());
-                let item = MenuItem::with_id(id, label, true, accel);
+                let item = MenuItem::with_id(id, tr(language, label), true, accel);
                 let _ = sub.append(&item);
             }
             let _ = menu.append(&sub);
@@ -276,7 +300,7 @@ impl NativeMenu {
             let _ = tx.send(e);
             ctx.request_repaint();
         }));
-        NativeMenu { _menu: menu, events: rx, theme_items, window_menu, window_items: Vec::new(), windows: Vec::new() }
+        NativeMenu { _menu: menu, language, events: rx, theme_items, window_menu, window_items: Vec::new(), windows: Vec::new() }
     }
 
     /// Keeps the Window menu's list of open windows (title, unsaved bullet, active check) in
@@ -409,6 +433,24 @@ mod tests {
         assert_eq!(item.1, "app.checkForUpdates");
         let mut app = super::SheetApp::new(gridcraft_engine::Session::new(), Default::default());
         assert!(app.run(item.1, serde_json::json!({})).is_ok());
+    }
+
+    #[test]
+    fn arabic_menu_labels_are_all_translated() {
+        let ar = super::Language::Ar;
+        for (title, entries) in super::tree() {
+            assert_ne!(super::tr(ar, title), title, "menu {title}");
+            for (label, _, _) in entries.into_iter().filter(|e| e.0 != "-") {
+                assert_ne!(super::tr(ar, label), label, "{title} > {label}");
+            }
+        }
+        for label in ["System", "Light", "Dark", "Services", "Hide Others", "Show All"] {
+            assert_ne!(super::tr(ar, label), label, "{label}");
+        }
+        assert_eq!(super::app_item(ar, "About {app}"), "حول جدول");
+        assert_eq!(super::app_item(ar, "Quit {app}"), "إنهاء جدول");
+        assert_eq!(super::app_item(super::Language::En, "Quit {app}"), "Quit جدول");
+        assert_eq!(super::tr(ar, "Sort…"), "فرز…");
     }
 
     #[test]
