@@ -139,6 +139,36 @@ pub(super) fn try_load(paths: &[(&str, u32)]) -> Option<FontData> {
     None
 }
 
+/// The first of `paths` that loads and has no Arabic letters, else the first that loads.
+///
+/// A cell font stands in for Calibri. macOS's Arial (and Windows' Arial) also carry Arabic,
+/// small and thin beside the Latin, and a cell's font decides its glyphs, so Arabic in a cell
+/// came out barely readable. A substitute without Arabic leaves it to the Arabic face further
+/// down the chain, as on Linux.
+#[cfg(not(target_arch = "wasm32"))]
+pub(super) fn try_load_without_arabic(paths: &[(&str, u32)]) -> Option<FontData> {
+    let mut first = None;
+    for (p, index) in paths {
+        let Some(blob) = font_file(p, *index) else { continue };
+        if !has_arabic((*blob).as_ref(), *index) {
+            return Some(FontData::from_blob(blob, *index));
+        }
+        first.get_or_insert((blob, *index));
+    }
+    first.map(|(blob, index)| FontData::from_blob(blob, index))
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(super) fn try_load_without_arabic(paths: &[(&str, u32)]) -> Option<FontData> {
+    try_load(paths)
+}
+
+/// Does the face map ا (U+0627)?
+pub(super) fn has_arabic(bytes: &[u8], index: u32) -> bool {
+    use skrifa::MetadataProvider;
+    skrifa::FontRef::from_index(bytes, index).is_ok_and(|font| font.charmap().map('\u{0627}').is_some())
+}
+
 /// The interface and script fallback font files, each read once per run and kept as a shared
 /// `Blob` for the rest of it. egui shares the blob instead of copying the file into its text
 /// engine, because every one of these files is loaded by every font rebuild for as long as the
@@ -346,6 +376,13 @@ pub(super) fn candidates(role: &str) -> Vec<(String, u32)> {
                     "DejaVuSans-BoldOblique.ttf",
                 ),
             };
+            // Helvetica.ttc's faces: regular, bold, oblique, bold oblique.
+            let helvetica = match role {
+                "cell" => 0,
+                "cell-bold" => 1,
+                "cell-italic" => 2,
+                _ => 3,
+            };
             // Calibri if the user has it installed system-wide (never from an Office bundle).
             add(format!("/Library/Fonts/{calibri_mac}"), 0);
             add(home_fonts(calibri_mac), 0);
@@ -357,6 +394,8 @@ pub(super) fn candidates(role: &str) -> Vec<(String, u32)> {
             add(format!("/usr/share/fonts/google-carlito-fonts/{carlito}"), 0);
             add(home_fonts(carlito), 0);
             add(format!("{mac_sup}/{arial_mac}"), 0);
+            // Helvetica has Arial's widths but no Arabic (see `try_load_without_arabic`).
+            add(format!("{mac_sys}/Helvetica.ttc"), helvetica);
             add(format!("{win}\\{arial_win}"), 0);
             for p in in_dirs(&lin, &[&format!("liberation/{lib}"), &format!("dejavu/{dejavu}")]) {
                 add(p, 0);
@@ -534,7 +573,11 @@ fn build_role_chain(
     let paths = candidates(role);
     let refs: Vec<(&str, u32)> = paths.iter().map(|(p, i)| (p.as_str(), *i)).collect();
     let mut chain: Vec<String> = Vec::new();
-    let loaded = if system { try_load(&refs) } else { None };
+    let loaded = match () {
+        _ if !system => None,
+        _ if role.starts_with("cell") => try_load_without_arabic(&refs),
+        _ => try_load(&refs),
+    };
     if let Some(mut fd) = loaded {
         // Helvetica Neue Bold's own TrueType hints close Cyrillic е into ө at 13 pt on a Retina
         // screen (#1184). Core Text never runs them, so this draws it the way macOS does.
@@ -641,6 +684,29 @@ mod font_binding_tests {
 
     /// Arabic interface text draws in the scaled Noto Sans Arabic face, right after the Latin
     /// interface face, ahead of any thinner system or cell face that also has Arabic.
+    #[test]
+    fn a_cell_substitute_with_arabic_gives_way_to_one_without() {
+        let Some((_, arabic)) = craft_font_faces().into_iter().find(|(_, f)| f.family == ARABIC_UI_FAMILY) else {
+            return; // Built without craft-fonts.
+        };
+        let latin = FontDefinitions::default().font_data.into_values().find(|f| !has_arabic((*f.font).as_ref(), f.index));
+        let Some(latin) = latin else { return };
+        let dir = std::env::temp_dir().join(format!("jadwal-cell-font-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let (a, l) = (dir.join("arabic.ttf"), dir.join("latin.ttf"));
+        std::fs::write(&a, arabic.bytes).unwrap();
+        std::fs::write(&l, (*latin.font).as_ref()).unwrap();
+        let (a, l) = (a.to_string_lossy().to_string(), l.to_string_lossy().to_string());
+        assert!(has_arabic(arabic.bytes, 0));
+        // Like macOS: Arial (with Arabic) comes before Helvetica (without).
+        let picked = try_load_without_arabic(&[(a.as_str(), 0), (l.as_str(), 0)]).unwrap();
+        assert!(!has_arabic((*picked.font).as_ref(), 0), "the face without Arabic is used");
+        // With nothing else installed, the face with Arabic is still better than none.
+        let only = try_load_without_arabic(&[("/no/such/font.ttf", 0), (a.as_str(), 0)]).unwrap();
+        assert!(has_arabic((*only.font).as_ref(), 0));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn arabic_interface_text_uses_the_scaled_noto_face_first() {
         let Some((key, _)) = craft_font_faces().into_iter().find(|(_, f)| f.family == ARABIC_UI_FAMILY) else {
