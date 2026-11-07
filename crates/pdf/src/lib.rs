@@ -9,11 +9,14 @@
 //! - RGBA images as RGB image XObjects with a soft mask for alpha (run-length encoded).
 //! - Coordinates are points with a **top-left origin** (y grows down); text `y` is the baseline.
 //!
-//! Streams are written uncompressed (images use the trivial RunLengthDecode filter) so the crate
-//! needs no dependencies.
+//! - Arabic is shaped (harfrust) and set in Noto Sans Arabic, embedded from the optional
+//!   craft-fonts build input, in visual order (Unicode bidi); see the `arabic` module.
+//!
+//! Streams are written uncompressed (images use the trivial RunLengthDecode filter).
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 #![forbid(unsafe_code)]
 
+mod arabic;
 mod metrics;
 mod symbol;
 
@@ -178,6 +181,10 @@ impl Font {
             Font::TimesBold | Font::TimesBoldItalic => Some(&metrics::TIMES_BOLD),
             _ => None,
         };
+        if arabic::is_arabic(c) && arabic::face().is_some() {
+            let mut buf = [0u8; 4];
+            return arabic::width(c.encode_utf8(&mut buf), true).round().clamp(0.0, f32::from(u16::MAX)) as u16;
+        }
         if needs_cid(c) {
             return CID_WIDTH;
         }
@@ -201,6 +208,16 @@ impl Font {
 
 /// Width of `text` in points when set in `font` at `size` points.
 pub fn text_width(font: Font, size: f32, text: &str) -> f32 {
+    if font != Font::Symbol && arabic::applies(text) {
+        let units: f64 = arabic::pieces(text)
+            .iter()
+            .map(|piece| match piece {
+                arabic::Piece::Arabic(glyphs) => glyphs.iter().map(|g| f64::from(g.advance)).sum::<f64>(),
+                arabic::Piece::Plain(plain) => plain.chars().map(|c| f64::from(font.char_width(c))).sum::<f64>(),
+            })
+            .sum();
+        return (units * f64::from(size) / 1000.0) as f32;
+    }
     // u64: a u32 sum overflows for ~8 million characters.
     let units: u64 = text.chars().map(|c| u64::from(font.char_width(c))).sum();
     units as f32 * size / 1000.0
@@ -247,8 +264,10 @@ pub fn win_ansi(c: char) -> u8 {
 
 /// Index of the CID font in a page's font flags (after the [`Font::ALL`] faces).
 const CID_FONT: usize = Font::ALL.len();
+/// Index of the embedded Arabic font in a page's font flags.
+const ARABIC_FONT: usize = CID_FONT + 1;
 /// Number of font resources a page can use.
-const FONT_SLOTS: usize = CID_FONT + 1;
+const FONT_SLOTS: usize = ARABIC_FONT + 1;
 /// Base font of the CID font used for characters WinAnsiEncoding lacks.
 const CID_BASE_FONT: &str = "STSong-Light";
 /// Default glyph width of the CID font (full-width), in 1/1000 em.
@@ -380,6 +399,8 @@ pub struct Page {
     images: Vec<ImageData>,
     links: Vec<LinkAnnotation>,
     depth: u32,
+    /// Glyphs drawn with the embedded Arabic face.
+    arabic: arabic::Used,
 }
 
 /// Most bytes of content per page before further drawing is dropped (keeps hostile inputs from
@@ -611,7 +632,8 @@ impl Page {
             return;
         }
         let fi = font.index();
-        let size = n(size.min(10_000.0));
+        let size_pt = size.min(10_000.0);
+        let size = n(size_pt);
         let (sn, cs) = if angle.is_finite() { angle.sin_cos() } else { (0.0, 1.0) };
         // Clockwise in y-down = counter-clockwise negated in PDF's y-up space.
         let mut s = format!("BT\n{}\n{} {} {} {} {} {} Tm\n", rgb_op(color, false), n(cs), n(-sn), n(sn), n(cs), n(origin.x), n(self.y(origin.y)));
@@ -625,8 +647,32 @@ impl Page {
             self.op(&s);
             return;
         }
-        // Runs of WinAnsi text use `font`; runs it cannot encode use the CID font. Each `Tj`
-        // advances the text position, so the runs follow each other on the baseline.
+        // Arabic is shaped and set in the embedded face, in visual order; the rest of the line
+        // keeps the standard fonts. Each `Tj`/`TJ` advances the text position, so the pieces
+        // follow each other on the baseline.
+        if arabic::applies(text) {
+            for piece in arabic::pieces(text) {
+                match piece {
+                    arabic::Piece::Arabic(glyphs) => {
+                        if let Some(f) = self.fonts.get_mut(ARABIC_FONT) {
+                            *f = true;
+                        }
+                        let _ = writeln!(s, "/F{} {} Tf\n{}", ARABIC_FONT + 1, size, arabic::tj(&glyphs, size_pt));
+                        self.arabic.add(&glyphs);
+                    }
+                    arabic::Piece::Plain(plain) => self.plain_runs(&mut s, fi, &size, &plain),
+                }
+            }
+        } else {
+            self.plain_runs(&mut s, fi, &size, text);
+        }
+        s.push_str("ET");
+        self.op(&s);
+    }
+
+    /// Writes `text` as runs of WinAnsi text in font slot `fi`, and runs it cannot encode in the
+    /// CID font.
+    fn plain_runs(&mut self, s: &mut String, fi: usize, size: &str, text: &str) {
         let mut rest = text;
         while let Some(first) = rest.chars().next() {
             let cid = needs_cid(first);
@@ -639,8 +685,6 @@ impl Page {
             let _ = writeln!(s, "/F{} {} Tf\n{} Tj", slot + 1, size, string);
             rest = tail;
         }
-        s.push_str("ET");
-        self.op(&s);
     }
 
     /// Draws an RGBA image (`pw`×`ph` pixels, row-major, straight alpha) into the box
@@ -673,6 +717,52 @@ pub struct Info {
     pub title: String,
     pub author: String,
     pub creator: String,
+}
+
+/// How many objects the font in `slot` takes: the CID font also needs its descendant font and
+/// font descriptor; the embedded Arabic font those, its font file and its ToUnicode map.
+fn font_object_count(slot: usize) -> u32 {
+    match slot {
+        CID_FONT => 3,
+        ARABIC_FONT => 5,
+        _ => 1,
+    }
+}
+
+/// The objects of the embedded Arabic font, numbered from `id`: the Type0 font, its CIDFontType2
+/// descendant, the font descriptor, the TrueType file and the ToUnicode map.
+fn arabic_font_objects(id: u32, face: &arabic::Face, used: &arabic::Used) -> Vec<(u32, Vec<u8>)> {
+    let (cid_id, desc_id, file_id, map_id) = (id + 1, id + 2, id + 3, id + 4);
+    let name = arabic::BASE_FONT;
+    let [x0, y0, x1, y1] = face.bbox;
+    let mut file = format!("<< /Length {} /Length1 {} >>\nstream\n", face.bytes.len(), face.bytes.len()).into_bytes();
+    file.extend_from_slice(face.bytes);
+    file.extend_from_slice(b"\nendstream");
+    let map = used.to_unicode();
+    let mut map_obj = format!("<< /Length {} >>\nstream\n", map.len()).into_bytes();
+    map_obj.extend_from_slice(map.as_bytes());
+    map_obj.extend_from_slice(b"endstream");
+    vec![
+        (id, format!("<< /Type /Font /Subtype /Type0 /BaseFont /{name} /Encoding /Identity-H /DescendantFonts [{cid_id} 0 R] /ToUnicode {map_id} 0 R >>").into_bytes()),
+        (
+            cid_id,
+            format!(
+                "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /{name} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor {desc_id} 0 R /CIDToGIDMap /Identity /DW 0 /W {} >>",
+                used.widths()
+            )
+            .into_bytes(),
+        ),
+        (
+            desc_id,
+            format!(
+                "<< /Type /FontDescriptor /FontName /{name} /Flags 4 /FontBBox [{x0} {y0} {x1} {y1}] /ItalicAngle 0 /Ascent {} /Descent {} /CapHeight {} /StemV 80 /FontFile2 {file_id} 0 R >>",
+                face.ascent, face.descent, face.ascent
+            )
+            .into_bytes(),
+        ),
+        (file_id, file),
+        (map_id, map_obj),
+    ]
 }
 
 /// A PDF document under construction.
@@ -747,7 +837,16 @@ impl PdfDoc {
     pub fn add_page(&mut self, width_pt: f32, height_pt: f32) -> &mut Page {
         let width = if width_pt.is_finite() { width_pt.clamp(3.0, 14_400.0) } else { 612.0 };
         let height = if height_pt.is_finite() { height_pt.clamp(3.0, 14_400.0) } else { 792.0 };
-        self.pages.push(Page { width, height, content: String::new(), fonts: [false; FONT_SLOTS], images: Vec::new(), links: Vec::new(), depth: 0 });
+        self.pages.push(Page {
+            width,
+            height,
+            content: String::new(),
+            fonts: [false; FONT_SLOTS],
+            images: Vec::new(),
+            links: Vec::new(),
+            depth: 0,
+            arabic: arabic::Used::default(),
+        });
         let i = self.pages.len() - 1;
         &mut self.pages[i]
     }
@@ -778,11 +877,11 @@ impl PdfDoc {
         for (i, u) in used.iter().enumerate() {
             if *u {
                 font_ids[i] = next;
-                // The CID font also needs its descendant font and font descriptor.
-                next += if i == CID_FONT { 3 } else { 1 };
+                next += font_object_count(i);
             }
         }
         let mut objects: Vec<(u32, Vec<u8>)> = Vec::new();
+        let used_arabic = arabic::Used::merged(self.pages.iter().map(|p| &p.arabic));
         let mut kids = Vec::new();
         let mut annotations = Vec::new();
         let page_count = self.pages.len();
@@ -790,6 +889,12 @@ impl PdfDoc {
         for (i, id) in font_ids.iter().enumerate() {
             if *id != 0 {
                 let _ = write!(font_dict, "/F{} {} 0 R ", i + 1, id);
+                if i == ARABIC_FONT {
+                    if let Some(face) = arabic::face() {
+                        objects.extend(arabic_font_objects(*id, face, &used_arabic));
+                    }
+                    continue;
+                }
                 if i == CID_FONT {
                     let (cid_id, desc_id) = (id + 1, id + 2);
                     objects.push((

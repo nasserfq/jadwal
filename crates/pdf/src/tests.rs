@@ -350,3 +350,55 @@ fn symbol_font_draws_maths_in_its_own_encoding() {
     assert!(Font::TimesRoman.can_encode('x') && !Font::TimesRoman.can_encode('\u{2211}'));
     assert_eq!(text_width(Font::Symbol, 10.0, "\u{2211}"), 7.13);
 }
+
+/// Arabic is shaped into the embedded Noto Sans Arabic face (craft-fonts), with a ToUnicode map,
+/// instead of the non-embedded Chinese CID font that showed it as Chinese characters.
+#[test]
+fn arabic_text_is_set_in_the_embedded_arabic_face() -> Result<(), Box<dyn Error>> {
+    if arabic::face().is_none() {
+        return Ok(()); // Built without craft-fonts: the CID fallback stays.
+    }
+    let mut doc = PdfDoc::new();
+    let page = doc.add_page(300.0, 200.0);
+    page.text(20.0, 40.0, 12.0, Font::Helvetica, [0, 0, 0], "المنتج: 426 (قلم)");
+    let pdf = doc.finish();
+    check_xref(&pdf)?;
+    assert!(find(&pdf, b"/FontFile2").is_some(), "the face is embedded");
+    assert!(find(&pdf, b"/BaseFont /NotoSansArabic").is_some());
+    assert!(find(&pdf, b"STSong").is_none(), "no Chinese CID font for Arabic");
+    // Copying gives the Arabic letters back: م (U+0645) is in the ToUnicode map.
+    assert!(find(&pdf, b"0645>").is_some(), "ToUnicode maps the glyphs to their letters");
+    Ok(())
+}
+
+/// Arabic is laid out right to left: the first logical word is drawn rightmost, and its letters
+/// are joined (shaped forms differ from the isolated ones).
+#[test]
+fn arabic_runs_are_in_visual_order_and_joined() {
+    if arabic::face().is_none() {
+        return;
+    }
+    let pieces = arabic::pieces("قلم 12 كتاب");
+    // Visual order, left to right: كتاب, " ", 12, " ", قلم.
+    let texts: Vec<String> = pieces
+        .iter()
+        .map(|p| match p {
+            arabic::Piece::Arabic(g) => g.iter().rev().map(|g| g.text.as_str()).collect(),
+            arabic::Piece::Plain(s) => s.clone(),
+        })
+        .collect();
+    assert_eq!(texts, ["كتاب", " ", "12", " ", "قلم"]);
+    let joined = arabic::shape("قلم", true);
+    let isolated: Vec<u16> = "قلم".chars().map(|c| arabic::shape(&c.to_string(), true)[0].gid).collect();
+    assert_ne!(joined.iter().rev().map(|g| g.gid).collect::<Vec<_>>(), isolated, "letters take their joined forms");
+}
+
+/// Measuring Arabic uses the shaped widths, not a full em per letter.
+#[test]
+fn arabic_width_is_the_shaped_width() {
+    if arabic::face().is_none() {
+        return;
+    }
+    let w = text_width(Font::Helvetica, 10.0, "مرحبا");
+    assert!(w > 10.0 && w < 40.0, "{w}");
+}
