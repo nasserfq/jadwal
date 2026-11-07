@@ -33,7 +33,18 @@ fn craft_fonts_are_the_last_fallback_in_every_family() {
     if expected.is_empty() {
         return; // optional input absent
     }
+    // The one exception: the interface families lead with the Arabic face, right after the Latin
+    // interface face, so Arabic interface text is drawn clearly (see `lead_with_arabic`).
+    let arabic = craft_font_faces().into_iter().find(|(_, f)| f.family == super::font_setup::ARABIC_UI_FAMILY).map(|(key, _)| key);
     for (family, chain) in &fonts.families {
+        let mut chain = chain.clone();
+        let mut expected = expected.clone();
+        if let Some(arabic) = &arabic
+            && chain.get(1) == Some(arabic)
+        {
+            chain.remove(1);
+            expected.retain(|k| k != arabic);
+        }
         let first = chain.iter().position(|k| k.starts_with("craft-")).unwrap_or(chain.len());
         assert_eq!(&chain[first..], expected.as_slice(), "{family:?} must end with exactly the permitted craft faces in manifest order");
     }

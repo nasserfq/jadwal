@@ -938,3 +938,29 @@ fn equations_print_with_the_symbol_font() {
     // A glyph no standard font has is a [?] box.
     assert!(contains(&pdf, "(?) Tj"));
 }
+
+/// The page x where `text` is drawn (the `Tm` before its `Tj`).
+fn text_x(pdf: &[u8], text: &str) -> f32 {
+    let s = String::from_utf8_lossy(pdf);
+    let at = s.find(&format!("({text}) Tj")).unwrap();
+    let tm = s[..at].rfind(" Tm").unwrap();
+    let fields: Vec<&str> = s[..tm].rsplit(['\n', ' ']).take(2).collect();
+    fields[1].parse().unwrap()
+}
+
+/// A right-to-left sheet prints mirrored, as on screen: column A on the right, General text
+/// against the right of its cell and numbers against the left.
+#[test]
+fn right_to_left_sheets_print_from_the_right() {
+    let mut s = s();
+    s.execute("range.setValues", json!({"range": "A1", "values": [["AAA", "BBB"], [7, "x"]]})).unwrap();
+    let (ltr, _) = pdf_of(&mut s, json!({}));
+    assert!(text_x(&ltr, "AAA") < text_x(&ltr, "BBB"));
+    s.execute("view.rightToLeft", json!({"on": true})).unwrap();
+    let (rtl, _) = pdf_of(&mut s, json!({}));
+    assert!(text_x(&rtl, "AAA") > text_x(&rtl, "BBB"), "column A is right of column B");
+    // In column A, text ends at the cell's right side and the number starts at its left.
+    assert!(text_x(&rtl, "7") < text_x(&rtl, "AAA"), "numbers sit left, text sits right");
+    let width = 612.0;
+    assert!(text_x(&rtl, "AAA") > width / 2.0, "the sheet starts at the right margin");
+}

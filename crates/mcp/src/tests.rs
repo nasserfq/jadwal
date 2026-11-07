@@ -506,7 +506,7 @@ fn cell_ref_boundaries_still_work() {
     ok(&mut s, "read_range", json!({"range": "A1:B2"}));
     ok(&mut s, "read_range", json!({"range": "$A$1:$B$2"}));
     // The active sheet's own name is an accepted prefix; an absent cell still means the selection.
-    ok(&mut s, "set_cell", json!({"cell": "Sheet1!C3", "input": "named"}));
+    ok(&mut s, "set_cell", json!({"cell": "ورقة1!C3", "input": "named"}));
     assert_eq!(ok(&mut s, "get_cell", json!({"cell": "C3"}))["text"], "named");
     ok(&mut s, "execute_command", json!({"command": "formulas.tracePrecedents", "params": {}}));
 }
@@ -531,7 +531,7 @@ fn other_sheet_prefix_is_error() {
     fails(&mut s, "set_cell", json!({"cell": "Nope!B2", "input": "x"}));
     // A command that cannot honour a sheet prefix must not drop it and use the active sheet.
     cmd_fails(&mut s, "formulas.tracePrecedents", json!({"cell": "Other!B2"}));
-    ok(&mut s, "set_cell", json!({"cell": "Sheet1!B2", "input": "here"}));
+    ok(&mut s, "set_cell", json!({"cell": "ورقة1!B2", "input": "here"}));
     assert_eq!(ok(&mut s, "get_cell", json!({"cell": "B2"}))["text"], "here");
     // cell.set resolves another existing sheet itself and writes there, not to the active sheet.
     ok(&mut s, "set_cell", json!({"cell": "Other!B3", "input": "there"}));
@@ -622,7 +622,7 @@ fn a_window_argument_routes_tools_to_that_window() {
     let rows = windows.as_array().unwrap();
     assert_eq!(rows.len(), 2, "{windows}");
     let (w1, book1) = (rows[0]["window"].as_u64().unwrap(), rows[0]["doc"].as_u64().unwrap());
-    assert_eq!((rows[0]["title"].as_str(), rows[1]["active"].as_bool()), (Some("Book1"), Some(true)));
+    assert_eq!((rows[0]["title"].as_str(), rows[1]["active"].as_bool()), (Some("مصنف1"), Some(true)));
 
     // Book2 stays active; reads and writes go to Book1's window.
     ok(&mut s, "set_cell", json!({"cell": "B1", "input": "=A1", "window": w1}));
@@ -631,14 +631,14 @@ fn a_window_argument_routes_tools_to_that_window() {
     let book2 = ok(&mut s, "read_range", json!({"range": "A1:B1"}));
     assert!(!book2.to_string().contains("book one"), "{book2}");
     let info = ok(&mut s, "inspect_workbook", json!({"window": w1}));
-    assert!(info.to_string().contains("Book1"), "{info}");
+    assert!(info.to_string().contains("مصنف1"), "{info}");
     assert!(fails(&mut s, "get_cell", json!({"cell": "A1", "window": 999})).contains("no open window"));
 
     // A second window on Book1 gets a numbered title.
     ok(&mut s, "execute_command", json!({"command": "view.newWindow", "window": w1}));
     let titles: Vec<String> =
         ok(&mut s, "list_windows", json!({})).as_array().unwrap().iter().map(|r| r["title"].as_str().unwrap().to_string()).collect();
-    assert_eq!(titles, ["Book1:1", "Book2", "Book1:2"]);
+    assert_eq!(titles, ["مصنف1:1", "مصنف2", "مصنف1:2"]);
 }
 
 #[test]

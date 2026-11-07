@@ -511,6 +511,7 @@ fn font_definitions_impl(language: crate::i18n::Language, used: &[String], syste
     // Chinese comes from the native-only OFL LXGW face when embedded; a system Han face still
     // leads, and the barred Noto CJK collection never enters.
     append_craft_faces(&mut fonts);
+    lead_with_arabic(&mut fonts);
     drop_unparseable_fonts(&mut fonts);
     // Only families egui still has data for count as bound (a dropped face can empty a chain).
     bound.retain(|f| fonts.families.get(&FontFamily::Name(f.as_str().into())).is_some_and(|c| !c.is_empty()));
@@ -604,9 +605,54 @@ fn append_craft_faces(fonts: &mut FontDefinitions) {
     }
 }
 
+/// The craft-fonts Arabic interface face.
+pub const ARABIC_UI_FAMILY: &str = "Noto Sans Arabic";
+
+/// How much larger the Arabic face is drawn: at the interface size, Noto Sans Arabic reads small
+/// beside the Latin face (the same scale كلمة and عرض use).
+pub const ARABIC_UI_SCALE: f32 = 1.15;
+
+/// جدول's interface is Arabic: its text draws in the craft-fonts Noto Sans Arabic face, scaled to
+/// match the Latin face, rather than in whichever thin system or cell face happens to carry
+/// Arabic. The face goes right after the interface face in the interface families (the Latin
+/// face keeps Latin, which Noto Sans Arabic lacks), so it wins over every other Arabic fallback.
+/// Cell families keep their order: a cell's font decides its glyphs. A build without craft-fonts
+/// changes nothing.
+fn lead_with_arabic(fonts: &mut FontDefinitions) {
+    let Some((key, font)) = craft_font_faces().into_iter().find(|(_, f)| f.family == ARABIC_UI_FAMILY) else {
+        return;
+    };
+    let mut data = FontData::from_static(font.bytes);
+    data.tweak.scale = ARABIC_UI_SCALE;
+    fonts.font_data.insert(key.clone(), Arc::new(data));
+    let ui_families = [FontFamily::Proportional, FontFamily::Name(UI.into()), FontFamily::Name(UI_BOLD.into())];
+    for family in ui_families {
+        if let Some(chain) = fonts.families.get_mut(&family) {
+            chain.retain(|k| *k != key);
+            let at = usize::from(!chain.is_empty());
+            chain.insert(at, key.clone());
+        }
+    }
+}
+
 #[cfg(test)]
 mod font_binding_tests {
     use super::*;
+
+    /// Arabic interface text draws in the scaled Noto Sans Arabic face, right after the Latin
+    /// interface face, ahead of any thinner system or cell face that also has Arabic.
+    #[test]
+    fn arabic_interface_text_uses_the_scaled_noto_face_first() {
+        let Some((key, _)) = craft_font_faces().into_iter().find(|(_, f)| f.family == ARABIC_UI_FAMILY) else {
+            return; // Built without craft-fonts: nothing to lead with.
+        };
+        let fonts = font_definitions_with(crate::i18n::Language::Ar, &[]);
+        for family in [FontFamily::Proportional, FontFamily::Name(UI.into()), FontFamily::Name(UI_BOLD.into())] {
+            let chain = &fonts.families[&family];
+            assert_eq!(chain.iter().position(|k| *k == key), Some(1), "{family:?}: {chain:?}");
+        }
+        assert_eq!(fonts.font_data[&key].tweak.scale, ARABIC_UI_SCALE);
+    }
 
     /// The families [`font_definitions`] always binds, whatever is installed.
     fn always_bound() -> Vec<String> {

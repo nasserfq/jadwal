@@ -45,8 +45,11 @@ pub fn title_bar(app: &mut SheetApp, ui: &mut Ui) {
             let max = ui.ctx().input(|i| i.viewport().maximized.unwrap_or(false));
             ui.ctx().send_viewport_cmd(egui::ViewportCommand::Maximized(!max));
         }
+        // Drawn mirrored in Arabic: the traffic lights' room is then on the right of the layout,
+        // or the controls there (Share, Search) would be drawn under them.
+        let (lead, trail) = if crate::mirror::active() { (8.0, TITLE_LEFT_PAD) } else { (TITLE_LEFT_PAD, 8.0) };
         ui.horizontal_centered(|ui| {
-            ui.add_space(TITLE_LEFT_PAD);
+            ui.add_space(lead);
             // AutoSave toggle (saves after each change when the workbook has a file).
             ui.label(egui::RichText::new(app.ui.language.tr("AutoSave")).font(theme::ui_font(12.5)).color(t.text_dim));
             let on = app.ui.autosave;
@@ -120,7 +123,7 @@ pub fn title_bar(app: &mut SheetApp, ui: &mut Ui) {
             });
             let left_end = ui.min_rect().right();
             let right = ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.add_space(8.0);
+                ui.add_space(trail);
                 let __k = icon_button(ui, Icon::Search, t.text_dim, "Search commands", vec2(28.0, ch));
                 control_keytip(app, ui, &__k, "commandSearch");
                 if __k.clicked() {

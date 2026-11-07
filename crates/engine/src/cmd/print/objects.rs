@@ -73,10 +73,16 @@ pub(super) fn draw_objects(pg: &mut Page, wb: &Workbook, si: usize, sh: &Sheet, 
     let block = b.range();
     let (sx0, sy0) = (sh.col_left(block.start.col), sh.row_top(block.start.row));
     let (sx1, sy1) = (sh.col_left(block.end.col.saturating_add(1)), sh.row_top(block.end.row.saturating_add(1)));
-    let (bx, by) = (b.xs.first().copied().unwrap_or(0.0), b.ys.first().copied().unwrap_or(0.0));
-    let (bw, bh) = (b.xs.last().copied().unwrap_or(bx) - bx, b.ys.last().copied().unwrap_or(by) - by);
+    let (lx, by) = (b.xs.first().copied().unwrap_or(0.0), b.ys.first().copied().unwrap_or(0.0));
+    let ((bx, right), bh) = (b.span(), b.ys.last().copied().unwrap_or(by) - by);
+    let bw = right - bx;
     let visible = |r: (f64, f64, f64, f64)| r.2 > 0.0 && r.3 > 0.0 && r.0 < sx1 && r.0 + r.2 > sx0 && r.1 < sy1 && r.1 + r.3 > sy0;
-    let place = |r: (f64, f64, f64, f64)| (bx + ((r.0 - sx0) as f32) * b.k, by + ((r.1 - sy0) as f32) * b.k, r.2 as f32 * b.k, r.3 as f32 * b.k);
+    // Mirrored (right-to-left sheet), an object keeps its place from the right.
+    let place = |r: (f64, f64, f64, f64)| {
+        let (x, w) = (lx + ((r.0 - sx0) as f32) * b.k, r.2 as f32 * b.k);
+        let x = if b.mirror.is_some() { b.mx(x + w) } else { x };
+        (x, by + ((r.1 - sy0) as f32) * b.k, w, r.3 as f32 * b.k)
+    };
     pg.save();
     pg.clip_rect(bx, by, bw, bh);
     draw_sparklines(pg, wb, si, sh, b, block);
