@@ -1401,6 +1401,32 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Evolutionary: a genetic search for models that aren't smooth; every variable cell needs bounds." => {
             "تطوري: بحث جيني للنماذج غير السلسة؛ تحتاج كل خلية متغيرة إلى حدود."
         }
+        // The macOS menu bar (apps/gridcraft/src/native_menu.rs).
+        "About {app}" => "حول {app}",
+        "Hide {app}" => "إخفاء {app}",
+        "Quit {app}" => "إنهاء {app}",
+        "Services" => "الخدمات",
+        "Hide Others" => "إخفاء الآخرين",
+        "Show All" => "إظهار الكل",
+        "Agent Control (MCP)" => "تحكم الوكيل (MCP)",
+        "Cells" => "الخلايا",
+        "Command Palette" => "لوحة الأوامر",
+        "Display Theme" => "مظهر العرض",
+        "Fill Down" => "تعبئة لأسفل",
+        "Fill Right" => "تعبئة لليمين",
+        "Function" => "دالة",
+        "Help" => "تعليمات",
+        "New from Sample" => "جديد من نموذج",
+        "Next Sheet" => "الورقة التالية",
+        "Previous Sheet" => "الورقة السابقة",
+        "Picture" => "صورة",
+        "Record Actions" => "تسجيل الإجراءات",
+        "Save as Web Page" => "حفظ كصفحة ويب",
+        "Sheet" => "ورقة",
+        "Tools" => "أدوات",
+        "Window" => "نافذة",
+        "جدول on GitHub" => "جدول على GitHub",
+        "Name…" => "تعريف اسم…",
         _ => return None,
     })
 }
