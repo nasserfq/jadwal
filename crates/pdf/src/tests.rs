@@ -301,7 +301,8 @@ fn ascii_info_strings_stay_literal_and_escaped() {
     doc.info.title = r"Q1 (draft) a\b".into();
     let pdf = doc.finish();
     assert!(find(&pdf, br"/Title (Q1 \(draft\) a\\b)").is_some());
-    assert!(find(&pdf, b"/Producer (GridCraft PDF)").is_some());
+    // The app's own name, جدول, as a UTF-16 text string.
+    assert!(find(&pdf, b"/Producer <FEFF062C062F06480644>").is_some());
 }
 
 #[test]
