@@ -376,6 +376,9 @@ impl DocState {
     }
 }
 
+/// The stem of a new workbook's title in an Arabic interface (مصنف1, مصنف2…).
+pub const ARABIC_BOOK_STEM: &str = "مصنف";
+
 /// Engine-side preferences.
 #[derive(Clone, Debug, Serialize, serde::Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -610,11 +613,18 @@ impl Session {
             }
         }
     }
-    /// A new blank workbook titled `BookN`.
+    /// A new blank workbook titled `BookN`; in a right-to-left (Arabic) interface `مصنفN`, with
+    /// sheets named `ورقةN`, as Arabic spreadsheets name them.
     pub fn new_workbook(&mut self) -> usize {
-        let n = (1..).find(|n| !self.docs.iter().any(|d| d.title == format!("Book{n}") && d.path.is_none())).unwrap_or(1);
+        let stem = if self.prefs.default_right_to_left { ARABIC_BOOK_STEM } else { "Book" };
+        let n = (1..).find(|n| !self.docs.iter().any(|d| d.title == format!("{stem}{n}") && d.path.is_none())).unwrap_or(1);
         let mut wb = Workbook::new();
         wb.props.author = self.prefs.user_name.clone();
+        if self.prefs.default_right_to_left
+            && let Some(first) = wb.sheets.first_mut()
+        {
+            Arc::make_mut(first).name = format!("{}1", gridcraft_model::workbook::ARABIC_SHEET_STEM);
+        }
         for _ in 1..self.prefs.sheets_in_new_workbook.clamp(1, 255) {
             let name = wb.next_sheet_name();
             wb.sheets.push(Arc::new(gridcraft_model::Sheet::new(name)));
@@ -624,7 +634,7 @@ impl Session {
                 Arc::make_mut(sheet).right_to_left = true;
             }
         }
-        self.add_document(DocState::new(wb, None, format!("Book{n}"), Trust::Local))
+        self.add_document(DocState::new(wb, None, format!("{stem}{n}"), Trust::Local))
     }
 
     /// Journals a command, then trims the oldest entries past either cap. A recording in progress

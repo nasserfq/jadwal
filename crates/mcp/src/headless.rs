@@ -21,7 +21,7 @@ impl Default for Headless {
 }
 
 impl Headless {
-    /// A session with a blank workbook (`Book1`) open, right to left as in جدول.
+    /// A session with a blank workbook (`مصنف1`, sheet `ورقة1`) open, right to left as in جدول.
     pub fn new() -> Self {
         let mut session = Session::new();
         session.prefs.default_right_to_left = true;

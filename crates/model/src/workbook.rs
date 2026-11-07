@@ -195,6 +195,10 @@ pub struct PhoneticString {
     pub props: Option<PhoneticProps>,
 }
 
+/// The stem of the default sheet names in an Arabic interface (ورقة1, ورقة2…), as Arabic
+/// spreadsheets name them.
+pub const ARABIC_SHEET_STEM: &str = "ورقة";
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Workbook {
     pub sheets: Vec<Arc<Sheet>>,
@@ -389,9 +393,15 @@ impl Workbook {
     pub fn active(&self) -> Option<&Sheet> {
         self.sheet(self.active_sheet())
     }
-    /// A fresh sheet name `SheetN` not in use.
+    /// A fresh sheet name `SheetN` not in use, or `ورقةN` in a workbook whose sheets already
+    /// follow the Arabic default names (a new workbook in an Arabic interface starts with ورقة1).
     pub fn next_sheet_name(&self) -> String {
-        (1..).map(|n| format!("Sheet{n}")).find(|n| self.sheet_index(n).is_none()).unwrap_or_else(|| "Sheet".into())
+        let arabic = self
+            .sheets
+            .iter()
+            .any(|s| s.name.strip_prefix(ARABIC_SHEET_STEM).is_some_and(|n| !n.is_empty() && n.bytes().all(|b| b.is_ascii_digit())));
+        let stem = if arabic { ARABIC_SHEET_STEM } else { "Sheet" };
+        (1..).map(|n| format!("{stem}{n}")).find(|n| self.sheet_index(n).is_none()).unwrap_or_else(|| stem.into())
     }
     /// Validates a sheet name like Excel: 1–31 chars, none of `: \ / ? * [ ]`, not starting or
     /// ending with `'`, unique (case-insensitive) unless it is `except`'s own name.
@@ -598,6 +608,11 @@ mod tests {
     fn sheet_names() {
         let wb = Workbook::new();
         assert_eq!(wb.next_sheet_name(), "Sheet2");
+        let mut arabic = Workbook::new();
+        Arc::make_mut(&mut arabic.sheets[0]).name = format!("{ARABIC_SHEET_STEM}1");
+        assert_eq!(arabic.next_sheet_name(), "ورقة2", "an Arabic workbook keeps Arabic names");
+        arabic.sheets.push(Arc::new(Sheet::new("ورقة2")));
+        assert_eq!(arabic.next_sheet_name(), "ورقة3");
         assert!(wb.check_sheet_name("sheet1", None).is_err());
         assert!(wb.check_sheet_name("sheet1", Some(0)).is_ok());
         assert!(wb.check_sheet_name("a/b", None).is_err());
