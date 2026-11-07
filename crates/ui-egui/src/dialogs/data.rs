@@ -231,15 +231,15 @@ pub(super) fn sort(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog, confir
             lv["column"] = json!(col.to_ascii_uppercase());
             let mut by = lv["by"].as_str().unwrap_or("values").to_string();
             craft_ui::ComboBox::from_id_salt(("by", i))
-                .selected_text(match by.as_str() {
+                .selected_text(lang.tr(match by.as_str() {
                     "cellColor" => "Cell Color",
                     "fontColor" => "Font Color",
                     _ => "Cell Values",
-                })
+                }))
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut by, "values".into(), "Cell Values");
-                    ui.selectable_value(&mut by, "cellColor".into(), "Cell Color");
-                    ui.selectable_value(&mut by, "fontColor".into(), "Font Color");
+                    ui.selectable_value(&mut by, "values".into(), lang.tr("Cell Values"));
+                    ui.selectable_value(&mut by, "cellColor".into(), lang.tr("Cell Color"));
+                    ui.selectable_value(&mut by, "fontColor".into(), lang.tr("Font Color"));
                 })
                 .response
                 .accessible_name(lang.tr("Sort On"));
