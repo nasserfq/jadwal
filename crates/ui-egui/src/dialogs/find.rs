@@ -4,8 +4,9 @@ use super::{Dialog, Json, Key, SheetApp, json};
 /// Draws the Find/Replace form with case, whole-cell and workbook options, requests field focus once, and runs find/replace with the current parameters.
 pub(super) fn find(app: &mut SheetApp, ui: &mut egui::Ui, d: &mut Dialog) {
     ui.horizontal(|ui| {
+        let lang = crate::i18n::current(ui.ctx());
         for tab in ["Find", "Replace"] {
-            if ui.selectable_label(d.tab == tab, tab).clicked() {
+            if ui.selectable_label(d.tab == tab, lang.tr(tab)).clicked() {
                 d.tab = tab.into();
             }
         }
