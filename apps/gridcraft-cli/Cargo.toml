@@ -21,3 +21,7 @@ log = { workspace = true }
 # `check`: validating the packages GridCraft writes (content types, relationships).
 zip = { workspace = true }
 quick-xml = { workspace = true }
+
+[build-dependencies]
+# VERSIONINFO for jadwal-cli.exe; build.rs only uses it when the target is Windows.
+winresource = "0.1"
