@@ -29,7 +29,7 @@ jobs:
       JADWAL_VERSION: 1.${{ github.run_number }}.0
       GRIDCRAFT_VERSION: 1.${{ github.run_number }}.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Fonts (Arabic and the other scripts, OFL)
         shell: bash
         run: |
@@ -86,7 +86,7 @@ jobs:
             tar -C out -czf "out/jadwal-$JADWAL_VERSION-linux-x86_64.tar.gz" Jadwal
           fi
           rm -rf out/Jadwal
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: out/*
@@ -97,13 +97,13 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true
       - name: Checksums
         run: cd dist && sha256sum * > SHA256SUMS.txt
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v3
         with:
           tag_name: v1.${{ github.run_number }}.0
           name: جدول ${{ github.run_number }}
