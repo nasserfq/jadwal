@@ -85,7 +85,22 @@ jobs:
             cp target/release/gridcraft-cli out/Jadwal/jadwal-cli
             tar -C out -czf "out/jadwal-$JADWAL_VERSION-linux-x86_64.tar.gz" Jadwal
           fi
-          rm -rf out/Jadwal
+          # The same files go into the Microsoft Store package below.
+          if [[ "$RUNNER_OS" == Windows ]]; then mv out/Jadwal store-files; else rm -rf out/Jadwal; fi
+      # The Microsoft Store package: uploaded to Partner Center by hand (the Store signs it), so it
+      # stays a workflow artifact and never goes into the GitHub release.
+      # A Store packaging problem never holds back the website downloads.
+      - name: Microsoft Store package (MSIX)
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: packaging/windows/msix/make-msix.ps1 -Version $env:JADWAL_VERSION -Files store-files -Out store
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        with:
+          name: microsoft-store
+          path: store/*.msix
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
@@ -100,6 +115,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: dist
+          pattern: "{macos,windows-x64,linux-x64}"
           merge-multiple: true
       - name: Checksums
         run: cd dist && sha256sum * > SHA256SUMS.txt
