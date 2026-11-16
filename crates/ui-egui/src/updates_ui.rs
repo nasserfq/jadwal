@@ -27,6 +27,14 @@ impl Default for Runtime {
 
 /// Ask for a check; the next frame's `tick` starts it. A manual one reports every outcome.
 pub(crate) fn start(app: &mut SheetApp, manual: bool) {
+    // A store copy is updated by its store (`craft_update::store`): it never checks at start, and
+    // Help ▸ Check for Updates opens the store's updates page.
+    if craft_update::store::installed() {
+        if manual && let Some(open) = &app.services.open_url {
+            open(craft_update::store::updates_url());
+        }
+        return;
+    }
     if manual {
         app.updates_rt.manual = true;
     } else {
